@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { createProject, exportVideo, loadDictionary, PRESETS } from './index.mjs';
+import { createProject, exportVideo, loadDictionary, PRESETS, reviewText, reviewStats } from './index.mjs';
 
 const { values: o, positionals: files } = parseArgs({
   allowPositionals: true,
@@ -42,7 +42,9 @@ for (const job of jobs) {
       quality: o.quality, language: o.lang, dictionary,
       onStage: (s) => process.stdout.write(`${s}… `),
     });
-    console.log(`${project.words.length} words in ${project.transcribeSeconds.toFixed(1)}s`);
+    const st = reviewStats(project.words);
+    console.log(`${project.words.length} words in ${project.transcribeSeconds.toFixed(1)}s, ${st.flagged} to check`);
+    if (st.flagged) console.log(`  ${reviewText(project.words)}`);
   }
   const base = project.video.replace(/\.[^.]+$/, '');
   if (o.edit) {
