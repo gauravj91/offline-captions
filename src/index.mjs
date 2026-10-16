@@ -13,7 +13,7 @@ import { resolveStyle } from './styles.mjs';
 import { buildAss } from './ass.mjs';
 import { buildSrt } from './srt.mjs';
 import { burn } from './render.mjs';
-import { flagForReview } from './review.mjs';
+import { flagForReview, THRESHOLDS } from './review.mjs';
 
 export { reviewText, reviewStats } from './review.mjs';
 
@@ -21,7 +21,7 @@ export { PRESETS } from './styles.mjs';
 export { learn, loadDictionary, saveDictionary } from './dictionary.mjs';
 
 /** Transcribes a video into an editable project (plain JSON). */
-export async function createProject(video, { quality = 'fast', language, dictionary = {}, vocabulary: extraVocabulary = [], onStage } = {}) {
+export async function createProject(video, { engine, quality = 'balanced', language, dictionary = {}, vocabulary: extraVocabulary = [], onStage } = {}) {
   onStage?.('probe');
   const meta = await probe(video);
   onStage?.('audio');
@@ -29,13 +29,14 @@ export async function createProject(video, { quality = 'fast', language, diction
   onStage?.('transcribe');
   const t0 = Date.now();
   const vocabulary = [...Object.values(dictionary), ...extraVocabulary];
-  const { words } = await transcribe(audio, { quality, language, vocabulary });
+  const { words, engine: used } = await transcribe(audio, { engine, quality, language, vocabulary });
   return {
     version: 1,
     video: path.resolve(video),
     ...meta,
+    engine: used,
     transcribeSeconds: (Date.now() - t0) / 1000,
-    words: flagForReview(applyDictionary(words, dictionary)),
+    words: flagForReview(applyDictionary(words, dictionary), THRESHOLDS[used]),
   };
 }
 
