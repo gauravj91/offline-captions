@@ -4,17 +4,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { extractAudio } from '../src/ffmpeg.mjs';
 import { transcribe } from '../src/transcribe.mjs';
-import { flagForReview } from '../src/review.mjs';
+import { flagForReview, THRESHOLDS } from '../src/review.mjs';
 
-const [refsFile, quality = 'fast', outFile] = process.argv.slice(2);
+const [refsFile, quality = 'parakeet', outFile] = process.argv.slice(2);
 const refs = JSON.parse(fs.readFileSync(refsFile, 'utf8'));
 const out = [];
 const t0 = Date.now();
 for (const r of refs) {
   const audio = await extractAudio(path.resolve(path.dirname(refsFile), r.file));
   const s = Date.now();
-  const { words } = await transcribe(audio, { quality, language: 'en' });
-  out.push({ ...r, secs: (Date.now() - s) / 1000, words: flagForReview(words).map(({ text, confidence, review }) => ({ text, confidence, review })) });
+  const { words, engine } = await transcribe(audio, quality === 'parakeet' ? { engine: 'parakeet' } : { engine: 'whisper', quality, language: 'en' });
+  out.push({ ...r, secs: (Date.now() - s) / 1000, words: flagForReview(words, THRESHOLDS[engine]).map(({ text, confidence, review }) => ({ text, confidence, review })) });
   process.stderr.write('.');
 }
 fs.writeFileSync(outFile, JSON.stringify(out, null, 1));
