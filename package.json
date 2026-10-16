@@ -1,0 +1,19 @@
+{
+  "name": "offline-captions",
+  "version": "0.1.0",
+  "description": "Offline, one-time-purchase animated captions for short-form video (engine + CLI)",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1"
+  },
+  "type": "module",
+  "bin": {
+    "captions": "src/cli.mjs"
+  },
+  "private": true
+}
