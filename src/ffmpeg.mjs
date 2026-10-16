@@ -43,7 +43,7 @@ export async function probe(file) {
 /** Decodes the audio track to 16 kHz mono Float32 PCM (what Whisper expects). */
 export async function extractAudio(file) {
   const buf = await run(FFMPEG, [
-    '-v', 'error', '-i', file, '-vn', '-ac', '1', '-ar', '16000', '-f', 'f32le', 'pipe:1',
+    '-v', 'error', '-i', file, '-vn', ...(process.env.CAPTIONS_DENOISE !== '1' ? [] : ['-af', 'highpass=f=80,afftdn=nf=-25,loudnorm']), '-ac', '1', '-ar', '16000', '-f', 'f32le', 'pipe:1',
   ], { collect: 'buffer' });
   return new Float32Array(buf.buffer, buf.byteOffset, Math.floor(buf.byteLength / 4));
 }
