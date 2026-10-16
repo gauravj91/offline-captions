@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// captions <video...> [--style bold|clean|punch|reveal] [--quality fast|balanced]
+// captions <video...> [--style bold|clean|punch|reveal] [--engine parakeet|whisper] [--quality fast|balanced|accurate (whisper)]
 //          [--dict words.json] [--lang en] [--keep-fillers] [--draft] [--out dir]
 //          [--edit]   stop after transcription and write <video>.captions.json
 //          [--from project.json]   render from an edited project
@@ -12,7 +12,8 @@ const { values: o, positionals: files } = parseArgs({
   allowPositionals: true,
   options: {
     style: { type: 'string', default: 'bold' },
-    quality: { type: 'string', default: 'fast' },
+    engine: { type: 'string' },
+    quality: { type: 'string', default: 'balanced' },
     dict: { type: 'string' },
     words: { type: 'string' },
     lang: { type: 'string' },
@@ -26,7 +27,7 @@ const { values: o, positionals: files } = parseArgs({
 });
 
 if (o.help || (!files.length && !o.from)) {
-  console.log(`Usage: captions <video...> [--style ${Object.keys(PRESETS).join('|')}] [--quality fast|balanced]
+  console.log(`Usage: captions <video...> [--style ${Object.keys(PRESETS).join('|')}] [--engine parakeet|whisper] [--quality fast|balanced|accurate (whisper)]
        [--dict dictionary.json] [--words "Hormozi,FitLab"] [--lang en] [--keep-fillers] [--draft] [--out dir] [--edit | --from project.json]`);
   process.exit(o.help ? 0 : 1);
 }
@@ -40,12 +41,12 @@ for (const job of jobs) {
   if (!project) {
     process.stdout.write(`• ${path.basename(job.file)}: `);
     project = await createProject(job.file, {
-      quality: o.quality, language: o.lang, dictionary,
+      engine: o.engine, quality: o.quality, language: o.lang, dictionary,
       vocabulary: o.words ? o.words.split(',') : [],
       onStage: (s) => process.stdout.write(`${s}… `),
     });
     const st = reviewStats(project.words);
-    console.log(`${project.words.length} words in ${project.transcribeSeconds.toFixed(1)}s, ${st.flagged} to check`);
+    console.log(`${project.engine}: ${project.words.length} words in ${project.transcribeSeconds.toFixed(1)}s, ${st.flagged} to check`);
     if (st.flagged) console.log(`  ${reviewText(project.words)}`);
   }
   const base = project.video.replace(/\.[^.]+$/, '');
