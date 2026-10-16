@@ -63,7 +63,9 @@ Tests: `npm test`.
 ## Roadmap
 
 **Phase 1: engine (this repo)** ✅ transcription, dictionary, 4 styles, burn-in, SRT, batch
-- [ ] Per-word confidence → "yellow words" to review (needs token probabilities; planned via whisper.cpp)
+- [x] Per-word confidence → "yellow words" to review (`review: true` in the project JSON, `[[word]]` in CLI output; threshold 0.6)
+- [ ] Feed dictionary terms to Whisper as a prompt so brand names are heard right the first time
+- [ ] Optional denoise (`CAPTIONS_DENOISE=1`) — needs testing on real noisy clips
 - [ ] Accuracy test set: 50–100 real creator clips, track error rate vs CapCut/Submagic
 - [ ] Swap engine to whisper.cpp (Metal on Mac, CPU/Vulkan on Windows) for 3–5x speed
 
