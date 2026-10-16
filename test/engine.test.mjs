@@ -60,3 +60,23 @@ test('review flags unsure words, runs, and trusts dictionary fixes', () => {
   ]);
   assert.deepEqual(out.map((w) => w.review), [false, true, true, true, false, true]);
 });
+
+import { stripPrompt, vocabularyPrompt } from '../src/transcribe.mjs';
+
+test('vocabulary prompt dedupes and prompt echoes are stripped', () => {
+  const p = vocabularyPrompt(['Hormozi', 'FitLab', 'Hormozi', ' ']);
+  assert.equal(p, 'Hormozi, FitLab.');
+  const ws = ['Hormozi,', 'FitLab.', 'My', 'coach', 'Hormozi', 'uses', 'Hormozi,', 'FitLab.', 'FitLab', 'rocks'].map((text) => ({ text }));
+  assert.deepEqual(stripPrompt(ws, p).map((w) => w.text), ['My', 'coach', 'Hormozi', 'uses', 'FitLab', 'rocks']);
+});
+
+import { windows } from '../src/transcribe.mjs';
+
+test('long audio is windowed under 30 s, cut at the quietest point', () => {
+  const sr = 16000, a = new Float32Array(sr * 65).fill(0.5);
+  a.fill(0, sr * 24, sr * 24.3); // silence at 24 s
+  const w = windows(a);
+  assert.ok(w.every(([s, e]) => (e - s) / sr <= 28.01));
+  assert.ok(Math.abs(w[0][1] / sr - 24.15) < 0.2);
+  assert.equal(w.at(-1)[1], a.length);
+});
