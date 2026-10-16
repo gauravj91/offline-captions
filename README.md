@@ -22,7 +22,8 @@ Options:
 |---|---|
 | `--style bold\|clean\|punch\|reveal` | Caption look (see below) |
 | `--quality fast\|balanced` | Whisper base vs small; `balanced` is more accurate, slower |
-| `--dict dictionary.json` | Personal dictionary, e.g. `{"fit lab": "FitLab"}` |
+| `--dict dictionary.json` | Personal dictionary, e.g. `{"fit lab": "FitLab"}` (its values are also fed to the model) |
+| `--words "Hormozi,FitLab"` | Extra names/brands to listen for |
 | `--lang en` | Force language (default: auto) |
 | `--keep-fillers` | Don't remove um/uh |
 | `--draft` | Fast, lower-quality render for previews |
@@ -64,7 +65,8 @@ Tests: `npm test`.
 
 **Phase 1: engine (this repo)** ✅ transcription, dictionary, 4 styles, burn-in, SRT, batch
 - [x] Per-word confidence → "yellow words" to review (`review: true` in the project JSON, `[[word]]` in CLI output; threshold 0.6)
-- [ ] Feed dictionary terms to Whisper as a prompt so brand names are heard right the first time
+- [x] Vocabulary prompt: dictionary values + `--words "Hormozi,FitLab"` are fed to Whisper so names are heard right the first time
+- [x] Own windowing at quiet points (fixes words dropped by the pipeline's chunk merge on clips > 30 s)
 - [ ] Optional denoise (`CAPTIONS_DENOISE=1`) — needs testing on real noisy clips
 - [ ] Accuracy test set: 50–100 real creator clips, track error rate vs CapCut/Submagic
 - [ ] Swap engine to whisper.cpp (Metal on Mac, CPU/Vulkan on Windows) for 3–5x speed
