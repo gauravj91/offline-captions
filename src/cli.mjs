@@ -14,6 +14,7 @@ const { values: o, positionals: files } = parseArgs({
     style: { type: 'string', default: 'bold' },
     quality: { type: 'string', default: 'fast' },
     dict: { type: 'string' },
+    words: { type: 'string' },
     lang: { type: 'string' },
     out: { type: 'string' },
     from: { type: 'string' },
@@ -26,7 +27,7 @@ const { values: o, positionals: files } = parseArgs({
 
 if (o.help || (!files.length && !o.from)) {
   console.log(`Usage: captions <video...> [--style ${Object.keys(PRESETS).join('|')}] [--quality fast|balanced]
-       [--dict dictionary.json] [--lang en] [--keep-fillers] [--draft] [--out dir] [--edit | --from project.json]`);
+       [--dict dictionary.json] [--words "Hormozi,FitLab"] [--lang en] [--keep-fillers] [--draft] [--out dir] [--edit | --from project.json]`);
   process.exit(o.help ? 0 : 1);
 }
 
@@ -40,6 +41,7 @@ for (const job of jobs) {
     process.stdout.write(`• ${path.basename(job.file)}: `);
     project = await createProject(job.file, {
       quality: o.quality, language: o.lang, dictionary,
+      vocabulary: o.words ? o.words.split(',') : [],
       onStage: (s) => process.stdout.write(`${s}… `),
     });
     const st = reviewStats(project.words);
