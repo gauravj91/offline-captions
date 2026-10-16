@@ -14,14 +14,18 @@ node src/cli.mjs my-video.mp4 --style bold
 # -> my-video.captioned.mp4 + my-video.captioned.srt
 ```
 
-The first run downloads the speech model (~80 MB for `fast`, ~250 MB for `balanced`) and caches it.
+The first run downloads the speech model and caches it in `~/.offline-captions/models` (Parakeet ~660 MB; Whisper models 80–800 MB).
+
+**Engines.** English uses **NVIDIA Parakeet-TDT 0.6B v2** (via sherpa-onnx), our most accurate and fastest option (7.6% WER on our 28-clip benchmark vs 9.6% for Whisper-small). Other languages use Whisper (`--lang de` etc.); force one with `--engine parakeet|whisper`.
+Parakeet model licence: CC-BY-4.0, so credit "NVIDIA Parakeet-TDT 0.6B v2" in the app's About/credits.
 
 Options:
 
 | Flag | What it does |
 |---|---|
 | `--style bold\|clean\|punch\|reveal` | Caption look (see below) |
-| `--quality fast\|balanced` | Whisper base vs small; `balanced` is more accurate, slower |
+| `--engine parakeet\|whisper` | Default: Parakeet for English, Whisper otherwise |
+| `--quality fast\|balanced\|accurate` | Whisper only: base / small / large-v3-turbo |
 | `--dict dictionary.json` | Personal dictionary, e.g. `{"fit lab": "FitLab"}` (its values are also fed to the model) |
 | `--words "Hormozi,FitLab"` | Extra names/brands to listen for |
 | `--lang en` | Force language (default: auto) |
@@ -50,7 +54,11 @@ video ──ffmpeg──> 16 kHz audio ──Whisper (ONNX, local)──> words 
 | File | Role |
 |---|---|
 | `src/ffmpeg.mjs` | Probe video, extract audio, run ffmpeg (`FFMPEG_PATH`/`FFPROBE_PATH` override) |
-| `src/transcribe.mjs` | Local Whisper via transformers.js, word timestamps |
+| `src/transcribe.mjs` | Engine switch (Parakeet default, Whisper fallback) |
+| `src/engines/parakeet.mjs` | Parakeet via sherpa-onnx: download, word timing, confidence |
+| `src/engines/whisper.mjs` | Whisper via transformers.js: vocabulary prompt, windowing, confidence |
+| `src/vocabulary.mjs` | Snaps near-misses onto your names/brands ("Ormozi" → "Hormozi") |
+| `src/review.mjs` | Yellow-word flags (per-engine thresholds) |
 | `src/dictionary.mjs` | Personal dictionary: apply + learn from corrections |
 | `src/segment.mjs` | Filler removal, split words into short readable lines |
 | `src/styles.mjs` | Style presets (sizes relative to video height) |
@@ -69,7 +77,9 @@ Tests: `npm test`.
 - [x] Own windowing at quiet points (fixes words dropped by the pipeline's chunk merge on clips > 30 s)
 - [ ] Optional denoise (`CAPTIONS_DENOISE=1`) — needs testing on real noisy clips
 - [ ] Accuracy test set: 50–100 real creator clips, track error rate vs CapCut/Submagic
-- [ ] Swap engine to whisper.cpp (Metal on Mac, CPU/Vulkan on Windows) for 3–5x speed
+- [x] Parakeet engine (best accuracy + speed on CPU)
+- [ ] Parakeet v3 (25 European languages)
+- [ ] Same-clip comparison vs CapCut/Submagic (test pack sent to Gaurav)
 
 **Phase 2: desktop app**
 - [ ] Electron shell: drag-drop, live preview (libass/HTML overlay), click-to-fix words, style editor, brand preset
