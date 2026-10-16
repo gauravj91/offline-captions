@@ -80,3 +80,20 @@ test('long audio is windowed under 30 s, cut at the quietest point', () => {
   assert.ok(Math.abs(w[0][1] / sr - 24.15) < 0.2);
   assert.equal(w.at(-1)[1], a.length);
 });
+
+import { tokensToWords } from '../src/engines/parakeet.mjs';
+import { fixVocabulary } from '../src/vocabulary.mjs';
+
+test('parakeet tokens become words with timing and min confidence', () => {
+  const w = tokensToWords({ tokens: [' That', "'", 's', ' wind', 'ow'], timestamps: [0, 0.1, 0.2, 0.4, 0.5], durations: [0.1, 0.1, 0.1, 0.1, 0.2], ys_log_probs: [0, Math.log(0.5), 0, 0, 0] }, 10);
+  assert.deepEqual(w.map((x) => x.text), ["That's", 'window']);
+  assert.equal(w[0].start, 10); assert.ok(Math.abs(w[1].end - 10.7) < 1e-9); assert.equal(w[0].confidence, 0.5);
+});
+
+test('vocabulary snaps near-misses and joined words, leaves others', () => {
+  const ws = 'My coach Ormozi uses the Submogic app and Fit Lab protein daily.'.split(' ').map((text, i) => ({ text, start: i, end: i + 1, confidence: 0.9 }));
+  const out = fixVocabulary(ws, ['Hormozi', 'Submagic', 'FitLab']);
+  assert.equal(out.map((w) => w.text).join(' '), 'My coach Hormozi uses the Submagic app and FitLab protein daily.');
+  assert.ok(out.find((w) => w.text === 'FitLab').snapped);
+  assert.equal(out.find((w) => w.text === 'FitLab').start, 8);
+});
