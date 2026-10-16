@@ -43,3 +43,20 @@ test('ass helpers and output', () => {
   assert.match(ass, /HELLO/);
   assert.match(buildSrt(lines), /00:00:00,000 --> /);
 });
+
+import { alignConfidence } from '../src/transcribe.mjs';
+import { flagForReview } from '../src/review.mjs';
+
+test('confidence is aligned to words via token text, min over tokens', () => {
+  const words = [{ text: 'Hey' }, { text: 'Hormozi,' }, { text: 'hi.' }];
+  alignConfidence(words, [{ text: ' Hey', p: 0.9 }, { text: ' Hor', p: 0.4 }, { text: 'mo', p: 0.8 }, { text: 'zi', p: 0.7 }, { text: ',', p: 0.1 }, { text: ' hi', p: 0.95 }, { text: '.', p: 0.99 }]);
+  assert.deepEqual(words.map((w) => w.confidence), [0.9, 0.4, 0.95]);
+});
+
+test('review flags unsure words, runs, and trusts dictionary fixes', () => {
+  const out = flagForReview([
+    { text: 'a', confidence: 0.9 }, { text: 'b', confidence: 0.3 }, { text: 'c', confidence: 0.8 },
+    { text: 'd', confidence: 0.2 }, { text: 'FitLab', confidence: 0.1, fixed: true }, { text: 'e', confidence: null },
+  ]);
+  assert.deepEqual(out.map((w) => w.review), [false, true, true, true, false, true]);
+});
