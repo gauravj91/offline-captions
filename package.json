@@ -9,7 +9,8 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "@huggingface/transformers": "^3.8.1"
+    "@huggingface/transformers": "^3.8.1",
+    "sherpa-onnx-node": "^1.13.8"
   },
   "type": "module",
   "bin": {
