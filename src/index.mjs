@@ -13,6 +13,9 @@ import { resolveStyle } from './styles.mjs';
 import { buildAss } from './ass.mjs';
 import { buildSrt } from './srt.mjs';
 import { burn } from './render.mjs';
+import { flagForReview } from './review.mjs';
+
+export { reviewText, reviewStats } from './review.mjs';
 
 export { PRESETS } from './styles.mjs';
 export { learn, loadDictionary, saveDictionary } from './dictionary.mjs';
@@ -31,7 +34,7 @@ export async function createProject(video, { quality = 'fast', language, diction
     video: path.resolve(video),
     ...meta,
     transcribeSeconds: (Date.now() - t0) / 1000,
-    words: applyDictionary(words, dictionary),
+    words: flagForReview(applyDictionary(words, dictionary)),
   };
 }
 
