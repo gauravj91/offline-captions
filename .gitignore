@@ -4,3 +4,5 @@ node_modules/
 *.captions.json
 .DS_Store
 models/
+dist/
+vendor/ffmpeg/*/
