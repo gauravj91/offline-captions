@@ -11,11 +11,18 @@ import { PRESETS, resolveStyle } from '../src/styles.mjs';
 import { buildCaptions } from '../src/captions.mjs';
 import { learn, loadDictionary, saveDictionary } from '../src/dictionary.mjs';
 import { toolPaths } from './tools.mjs';
+import { loadLicense, licenseStatus, activate, deactivate, revalidate } from '../src/license.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SHOTS = process.env.CAPTIONS_UI_SHOTS; // dev only: scripted screenshot tour
 const modelsDir = process.env.CAPTIONS_MODEL_DIR || path.join(os.homedir(), '.offline-captions', 'models');
 let win;
+// Paid desktop app: exporting needs an activated license (the free trial is the web app).
+// CAPTIONS_NO_LICENSE=1 skips the check for development and screenshots.
+const LICENSE_REQUIRED = !process.env.CAPTIONS_NO_LICENSE && !SHOTS;
+export const BUY_URL = process.env.CAPTIONS_BUY_URL || 'https://offline-captions-site.vercel.app/#checkout';
+const licenseFile = () => path.join(app.getPath('userData'), 'license.json');
+let license = { licensed: false, reason: 'none' };
 
 // ---------- worker (utilityProcess) ----------
 let worker;
@@ -74,6 +81,13 @@ function registerIpc() {
   }));
   ipcMain.handle('app:presets', () => PRESETS);
 
+  ipcMain.handle('license:status', () => ({ ...license, required: LICENSE_REQUIRED, buyUrl: BUY_URL }));
+  ipcMain.handle('license:activate', async (_e, key) => {
+    try { license = await activate(licenseFile(), key); return { ok: true, ...license }; }
+    catch (e) { return { ok: false, error: e.message, code: e.code }; }
+  });
+  ipcMain.handle('license:deactivate', async () => { license = await deactivate(licenseFile()); return license; });
+
   ipcMain.handle('dialog:videos', async () => {
     const r = await dialog.showOpenDialog(win, {
       title: 'Choose videos', properties: ['openFile', 'multiSelections'],
@@ -108,6 +122,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('job:export', (_e, { jobId, project, outDir, style, fillers, draft }) => {
+    if (LICENSE_REQUIRED && !license.licensed) throw new Error('LICENSE_REQUIRED');
     const dir = outDir || path.dirname(project.video);
     const base = path.basename(project.video).replace(/\.[^.]+$/, '');
     const output = path.join(dir, `${base}.captioned.mp4`);
@@ -136,6 +151,8 @@ function createWindow() {
 
 app.whenReady().then(() => {
   dictionary = loadDictionary(dictFile());
+  license = licenseStatus(loadLicense(licenseFile()));
+  revalidate(licenseFile()).then((s) => { license = s; send('license:changed', license); }).catch(() => {});
   if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
   registerIpc();
   startWorker();
