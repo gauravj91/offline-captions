@@ -145,7 +145,19 @@ footer li{margin-bottom:4px}
 [hidden]{display:none!important}
 th:first-child{position:sticky;left:0;z-index:1;background:var(--bg)}
 thead th:first-child{background:var(--bg2)}
-@media (max-width:620px){tbody th{min-width:112px;width:auto;padding-left:12px;padding-right:10px}th,td{padding:12px 12px}}</style>
+@media (max-width:620px){tbody th{min-width:112px;width:auto;padding-left:12px;padding-right:10px}th,td{padding:12px 12px}}
+
+.next-card{margin-top:20px;border-style:dashed}
+.next-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start}
+@media (max-width:860px){.next-grid{grid-template-columns:1fr}}
+form.next-form{margin:16px 0 8px;max-width:none}
+fieldset.intent{border:0;padding:0;margin:4px 0;flex:1 1 100%;display:flex;flex-direction:column;gap:6px}
+fieldset.intent label{display:flex;gap:8px;align-items:center;font-size:.92rem;color:var(--muted);cursor:pointer}
+fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
+.joined{display:none;color:var(--accent);font-weight:700}
+.joined:target{display:block}
+.wl-msg{flex:1 1 100%;margin:4px 0 0;font-weight:700;color:var(--accent)}
+.wl-msg.err{color:#ff6b6b}</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -260,6 +272,25 @@ thead th:first-child{background:var(--bg2)}
   if (c.CHECKOUT_URL) each("[data-checkout]", function (el) { el.setAttribute("href", c.CHECKOUT_URL); });
   if (c.CHECKOUT_URL_INR) each("[data-checkout-inr]", function (el) { el.setAttribute("href", c.CHECKOUT_URL_INR); });
   if (c.WAITLIST_ACTION) each("[data-waitlist]", function (el) { el.setAttribute("action", c.WAITLIST_ACTION); });
+  // Waitlist forms: submit with fetch when the endpoint is real, show the result inline.
+  each("[data-waitlist]", function (form) {
+    if (!form.querySelector('[name="page"]')) { var pg = document.createElement("input"); pg.type = "hidden"; pg.name = "page"; pg.value = location.pathname; form.appendChild(pg); }
+    form.addEventListener("submit", function (e) {
+      var url = form.getAttribute("action") || "";
+      if (!/^https?:/.test(url) || !window.fetch) return; // plain post fallback
+      e.preventDefault();
+      var btn = form.querySelector("button"), msg = form.querySelector(".wl-msg");
+      if (!msg) { msg = document.createElement("p"); msg.className = "wl-msg"; msg.setAttribute("role", "status"); form.appendChild(msg); }
+      btn.disabled = true; msg.className = "wl-msg"; msg.textContent = "Adding you…";
+      fetch(url, { method: "POST", body: new FormData(form), headers: { accept: "application/json" } })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) {
+          if (x.ok) { msg.textContent = "You're on the list. We'll email you once."; form.querySelector('[type="email"]').value = ""; }
+          else { msg.className = "wl-msg err"; msg.textContent = "That email doesn't look right. Try again?"; btn.disabled = false; }
+        })
+        .catch(function () { msg.className = "wl-msg err"; msg.textContent = "Couldn't reach the server. Please try again."; btn.disabled = false; });
+    });
+  });
   if (c.CONTACT_EMAIL) each("[data-email]", function (el) { el.textContent = c.CONTACT_EMAIL; el.setAttribute("href", "mailto:" + c.CONTACT_EMAIL); });
   if (c.SITE_URL && c.SITE_URL.indexOf("YOUR-DOMAIN") < 0) {
     var u = c.SITE_URL.replace(/\/$/, "") + location.pathname;
