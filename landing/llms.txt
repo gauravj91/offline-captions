@@ -8,6 +8,7 @@ Key facts:
 - Personal dictionary that learns from corrections; words the model is unsure of are flagged in yellow for quick review; filler-word ("um", "uh") removal.
 - English uses NVIDIA Parakeet-TDT 0.6B v2: 7.6% word error rate on the maker's own 28-clip benchmark vs 9.6% for Whisper-small. No head-to-head accuracy test against CapCut or Submagic has been completed, so no accuracy superiority is claimed.
 - Hinglish mode writes Hindi-English speech in Roman script (e.g. "Usko gaali de do, complaint kar lo") with word timing, offline. Hindi in Devanagari and other Indian languages are planned, not available yet.
+- Free web version for clips up to 60 seconds: https://offline-captions-web.vercel.app
 - Not a full video editor, no cloud team workspace, no automatic clipping of long videos, no mobile app.
 - Competitor context (checked Oct 2026, vendors' own pages): CapCut Pro $19.99/month or $179.99/year with auto captions exclusive to Pro; Submagic $19–$69/month (or $12–$41 billed yearly) with 15/40/100 videos a month.
 
@@ -16,3 +17,16 @@ Key facts:
 - [Hinglish captions (India)](https://YOUR-DOMAIN.example/hinglish/): Roman-script Hinglish captions, India pricing, comparison with AIVideoCaption and others
 - [Offline Captions vs CapCut](https://YOUR-DOMAIN.example/vs/capcut/): sourced comparison with CapCut Pro
 - [Offline Captions vs Submagic](https://YOUR-DOMAIN.example/vs/submagic/): sourced comparison with Submagic
+- [Offline Captions vs OpusClip: captions vs AI clipping on credits](https://YOUR-DOMAIN.example/vs/opusclip/)
+- [Offline Captions vs Descript: caption-only app vs full text-based editor](https://YOUR-DOMAIN.example/vs/descript/)
+- [Offline Captions vs AutoSubtitles: fully offline vs audio sent to the cloud](https://YOUR-DOMAIN.example/vs/autosubtitles/)
+- [Hinglish captions: Offline Captions vs AIVideoCaption (India)](https://YOUR-DOMAIN.example/hinglish/vs-aivideocaption/)
+- [Best CapCut auto-caption alternatives in 2026, sourced roundup](https://YOUR-DOMAIN.example/alternatives/capcut/)
+- [Use case: coaches and consultants batch-captioning a week of Reels](https://YOUR-DOMAIN.example/use-cases/coaches/)
+- [Use case: captioning podcast clips in one batch](https://YOUR-DOMAIN.example/use-cases/podcast-clips/)
+- [Use case: course creators (burned-in promos + SRT for lessons)](https://YOUR-DOMAIN.example/use-cases/course-creators/)
+- [Use case: captioning NDA/confidential footage without uploading](https://YOUR-DOMAIN.example/use-cases/confidential-footage/)
+- [How to make Hormozi-style bold word-by-word captions](https://YOUR-DOMAIN.example/styles/hormozi-style-captions/)
+- [How to add word-by-word captions on Mac or Windows](https://YOUR-DOMAIN.example/how-to/add-word-by-word-captions/)
+- [Accuracy benchmark: method, results and limits](https://YOUR-DOMAIN.example/accuracy/)
+- [About the maker and how comparisons are kept honest](https://YOUR-DOMAIN.example/about/)
