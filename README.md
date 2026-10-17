@@ -87,6 +87,10 @@ Security defaults: `contextIsolation: true`, `nodeIntegration: false`, `sandbox:
 
 **Signing (not done here)**: macOS needs an Apple Developer ID certificate + notarisation (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` env vars for electron-builder; `hardenedRuntime` is already on, entitlements for JIT may be needed by ONNX Runtime). Windows: Azure Artifact Signing or an OV/EV certificate (`win.azureSignOptions` or `CSC_LINK`). Unsigned builds work for testing: macOS right-click → Open; Windows SmartScreen → More info → Run anyway.
 
+## Web version (free trial, `web/`)
+
+A static browser version used as the top of the funnel: one clip up to 60 s, Whisper (transformers.js) in a Web Worker, the same review UX, live canvas preview of the 4 styles, SRT + burned-in 1080p MP4 via WebCodecs. The video never leaves the browser. Limits live in `web/config.js`. Live: https://offline-captions-web.vercel.app. See `web/README.md` (build, deploy, timings, sherpa-onnx/Parakeet-in-browser findings).
+
 ## How it works
 
 ```
