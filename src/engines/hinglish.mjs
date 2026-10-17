@@ -18,11 +18,11 @@ import { alignWords } from './hinglish-align.mjs';
 
 const require = createRequire(import.meta.url);
 const SR = 16000;
-const REPO = 'https://huggingface.co/parismitaglobalsolutions/indicconformer-sherpa-onnx/resolve/main/';
+export const REPO = 'https://huggingface.co/parismitaglobalsolutions/indicconformer-sherpa-onnx/resolve/main/';
 // fast/balanced -> Swift (~150 MB, ~6x realtime); accurate -> Apex (~1 GB, ~2x realtime).
 export const VARIANTS = { fast: 'swift', balanced: 'swift', accurate: 'apex' };
-const TIMING = { dir: 'indicconformer-hi', files: { 'model.int8.onnx': 'hi/model.int8.onnx', 'tokens.txt': 'tokens.txt' } };
-const textModel = (v) => ({ dir: `hinglish-${v}`, files: Object.fromEntries(['encoder.int8.onnx', 'decoder.int8.onnx', 'tokens.txt'].map((f) => [f, `hi-hinglish-${v}/${f}`])) });
+export const TIMING = { dir: 'indicconformer-hi', files: { 'model.int8.onnx': 'hi/model.int8.onnx', 'tokens.txt': 'tokens.txt' } };
+export const textModel = (v) => ({ dir: `hinglish-${v}`, files: Object.fromEntries(['encoder.int8.onnx', 'decoder.int8.onnx', 'tokens.txt'].map((f) => [f, `hi-hinglish-${v}/${f}`])) });
 
 const base = () => process.env.CAPTIONS_MODEL_DIR || path.join(os.homedir(), '.offline-captions', 'models');
 
@@ -88,7 +88,7 @@ export function fillEnds(words, maxHold = 0.6) {
   });
 }
 
-export async function transcribeHinglish(audio, { quality = 'balanced' } = {}) {
+export async function transcribeHinglish(audio, { quality = 'balanced', onProgress } = {}) {
   const rec = await recognizers(quality);
   const all = [];
   for (const [a, b] of windows(audio)) { // Whisper decoder: windows under 30 s
@@ -98,6 +98,7 @@ export async function transcribeHinglish(audio, { quality = 'balanced' } = {}) {
     const aligned = alignWords(roman, timed, (b - a) / SR)
       .map((w) => ({ ...w, start: Math.max(w.start, a / SR), end: Math.min(w.end, b / SR) }));
     all.push(...aligned.map(({ text, start, end, anchored }) => ({ text, start, end, confidence: anchored ? 1 : 0.5 })));
+    onProgress?.(b / audio.length);
   }
   const words = fillEnds(all);
   return { text: words.map((w) => w.text).join(' '), words };
