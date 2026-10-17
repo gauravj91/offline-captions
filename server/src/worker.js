@@ -13,10 +13,12 @@
 // Secrets
 //   PADDLE_WEBHOOK_SECRET endpoint secret key of the Paddle notification destination
 //   LICENSE_PRIVATE_KEY   base64url PKCS8 Ed25519 private key
+//   WAITLIST_ADMIN_TOKEN  bearer token for GET /waitlist/export (CSV) and /waitlist/stats
 //
 // Key layout
 //   lic:<lid>    license record (JSON)        txn:<txn_id> -> lid
 //   cust:<ctm>   {email, name}                evt:<event_id> -> "1" (dedupe, 30 days)
+//   wl:<segment>:<email>  waitlist signup {email, segment, intent[], page, country, first, last}
 
 import { DurableObject } from "cloudflare:workers";
 
@@ -96,6 +98,10 @@ export class Store extends DurableObject {
   async put(k, v, ttl) {
     await this.ctx.storage.put(k, { v, exp: ttl ? Math.floor(Date.now() / 1000) + ttl : null });
   }
+  async list(prefix) {
+    const m = await this.ctx.storage.list({ prefix });
+    return [...m.entries()].map(([k, r]) => [k, r.v]);
+  }
 }
 function store(env) {
   if (!env.STORE) return env.KV;
@@ -103,7 +109,8 @@ function store(env) {
   return {
     // LEGACY_KV: read-only fallback for records written before the move to the Durable Object (17 Oct 2026 sandbox tests).
     get: async (k) => (await stub.get(k)) ?? (env.LEGACY_KV && !k.startsWith("evt:") ? await env.LEGACY_KV.get(k) : null),
-    put: (k, v, opts = {}) => stub.put(k, v, opts.expirationTtl || null) };
+    put: (k, v, opts = {}) => stub.put(k, v, opts.expirationTtl || null),
+    list: (prefix) => stub.list(prefix) };
 }
 
 const getJSON = async (env, k) => { const v = await store(env).get(k); return v ? JSON.parse(v) : null; };
@@ -177,6 +184,73 @@ async function handleWebhook(req, env) {
   return json({ ok: true, result });
 }
 
+
+// ---------- waitlist ----------
+// POST /waitlist from the landing forms (form-encoded or JSON). JS clients get JSON; a plain
+// form post is redirected back to the page with #joined. Segments are a fixed list so the
+// public endpoint can't be used to write arbitrary keys.
+const SEGMENTS = ["launch", "launch-hinglish", "shorts-studio", "shorts-studio-hinglish"];
+const INTENTS = ["upgrade40", "bundle79"];
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
+
+async function readBody(req) {
+  const ct = req.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    const b = await req.json();
+    return { get: (k) => (Array.isArray(b[k]) ? b[k][0] : b[k]), getAll: (k) => [].concat(b[k] ?? []) };
+  }
+  const f = await req.formData();
+  return { get: (k) => f.get(k), getAll: (k) => f.getAll(k) };
+}
+
+async function handleWaitlist(req, env) {
+  const wantsJson = (req.headers.get("accept") || "").includes("application/json");
+  let b; try { b = await readBody(req); } catch { return json({ error: "bad_body" }, 400); }
+  const back = (ok) => {
+    if (wantsJson) return json(ok ? { ok: true } : { error: "invalid_email" }, ok ? 200 : 400);
+    const ref = req.headers.get("referer");
+    if (!ref) return json(ok ? { ok: true } : { error: "invalid_email" }, ok ? 200 : 400);
+    const u = new URL(ref); u.hash = ok ? "joined" : "waitlist-error";
+    return new Response(null, { status: 303, headers: { location: u.toString() } });
+  };
+  if (b.get("_gotcha")) return back(true); // honeypot: pretend success
+  const email = String(b.get("email") || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return back(false);
+  const segment = SEGMENTS.includes(b.get("segment")) ? b.get("segment") : "launch";
+  const intent = [...new Set(b.getAll("intent").map(String).filter((x) => INTENTS.includes(x)))];
+  const page = String(b.get("page") || "").slice(0, 120);
+  const k = `wl:${segment}:${email}`;
+  const prev = await getJSON(env, k);
+  const now = new Date().toISOString();
+  const rec = { email, segment, intent: [...new Set([...(prev?.intent || []), ...intent])], page: prev?.page || page,
+                country: req.cf?.country || prev?.country || null, first: prev?.first || now, last: now };
+  await putJSON(env, k, rec);
+  return back(true);
+}
+
+async function waitlistRows(env) {
+  const s = store(env);
+  // Test signups made with @example.com addresses are left out.
+  if (s.list) return (await s.list("wl:")).map(([, v]) => JSON.parse(v)).filter((r) => !r.email.endsWith("@example.com"));
+  return []; // test KV without list support
+}
+
+async function handleWaitlistAdmin(req, env, path) {
+  const auth = req.headers.get("authorization") || "";
+  const tok = auth.startsWith("Bearer ") ? auth.slice(7) : new URL(req.url).searchParams.get("token");
+  if (!env.WAITLIST_ADMIN_TOKEN || !tok || !timingSafeEqual(tok, env.WAITLIST_ADMIN_TOKEN)) return json({ error: "unauthorized" }, 401);
+  const rows = await waitlistRows(env);
+  if (path === "/waitlist/stats") {
+    const seg = {}; const intent = {};
+    for (const r of rows) { seg[r.segment] = (seg[r.segment] || 0) + 1; for (const i of r.intent || []) intent[`${r.segment}:${i}`] = (intent[`${r.segment}:${i}`] || 0) + 1; }
+    return json({ total: rows.length, segments: seg, intent });
+  }
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = ["email,segment,intent,page,country,first,last",
+    ...rows.map((r) => [r.email, r.segment, (r.intent || []).join(" "), r.page, r.country, r.first, r.last].map(q).join(","))].join("\n");
+  return new Response(csv + "\n", { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": "attachment; filename=waitlist.csv" } });
+}
+
 // ---------- public API ----------
 async function licenseFromKey(env, key) {
   const p = await verifyToken(env, key, "OC1");
@@ -243,6 +317,13 @@ export default {
     try {
       if (url.pathname === "/health") return json({ ok: true, env: env.PADDLE_ENV || "unknown" });
       if (url.pathname === "/webhooks/paddle" && req.method === "POST") return await handleWebhook(req, env);
+      if (url.pathname === "/waitlist" && req.method === "POST") {
+        const r = await handleWaitlist(req, env);
+        for (const [k, v] of Object.entries(c)) r.headers.set(k, v);
+        return r;
+      }
+      if ((url.pathname === "/waitlist/export" || url.pathname === "/waitlist/stats") && req.method === "GET")
+        return await handleWaitlistAdmin(req, env, url.pathname);
       if (url.pathname.startsWith("/api/")) {
         const r = await handleApi(req, env, url.pathname);
         for (const [k, v] of Object.entries(c)) r.headers.set(k, v);
