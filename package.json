@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Offline, one-time-purchase animated captions for short-form video (engine, CLI and desktop app)",
   "scripts": {
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test test/*.test.mjs server/test/*.test.mjs",
     "app": "electron .",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win"
