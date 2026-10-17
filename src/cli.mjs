@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// captions <video...> [--style bold|clean|punch|reveal] [--engine parakeet|whisper] [--quality fast|balanced|accurate (whisper)]
-//          [--dict words.json] [--lang en] [--keep-fillers] [--draft] [--out dir]
+// captions <video...> [--style bold|clean|punch|reveal] [--engine parakeet|whisper|hinglish] [--quality fast|balanced|accurate]
+//          [--dict words.json] [--lang en|hi|hinglish] [--keep-fillers] [--draft] [--out dir]
 //          [--edit]   stop after transcription and write <video>.captions.json
 //          [--from project.json]   render from an edited project
 import fs from 'node:fs';
@@ -27,8 +27,8 @@ const { values: o, positionals: files } = parseArgs({
 });
 
 if (o.help || (!files.length && !o.from)) {
-  console.log(`Usage: captions <video...> [--style ${Object.keys(PRESETS).join('|')}] [--engine parakeet|whisper] [--quality fast|balanced|accurate (whisper)]
-       [--dict dictionary.json] [--words "Hormozi,FitLab"] [--lang en] [--keep-fillers] [--draft] [--out dir] [--edit | --from project.json]`);
+  console.log(`Usage: captions <video...> [--style ${Object.keys(PRESETS).join('|')}] [--engine parakeet|whisper|hinglish] [--quality fast|balanced|accurate]
+       [--dict dictionary.json] [--words "Hormozi,FitLab"] [--lang en|hi|hinglish] [--keep-fillers] [--draft] [--out dir] [--edit | --from project.json]`);
   process.exit(o.help ? 0 : 1);
 }
 
