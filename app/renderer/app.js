@@ -495,6 +495,11 @@ async function exportJobs(ids) {
     j.status = 'exporting'; renderQueues();
     $('#ex-text').textContent = ids.length > 1 ? `Rendering ${n + 1} of ${ids.length} · ${j.name}` : `Rendering ${j.name}`;
     onExportProgress(j, 0);
+    if (state.license?.required && !state.license.licensed) {
+      j.status = 'ready'; renderQueues(); $('#ex').hidden = true;
+      openLicense('Exporting is part of the paid desktop app. Paste your license key to export this video.');
+      break;
+    }
     try {
       j.output = await api.exportVideo({ jobId: id, project: j.project, outDir: state.outDir, style: styleArgs(), fillers: state.fillers, draft: state.draft });
       j.status = 'done'; last = j.output; ok++;
@@ -549,6 +554,38 @@ $('#sel-other').addEventListener('change', (e) => { state.otherLang = e.target.v
 $('#btn-about').addEventListener('click', () => $('#about').showModal());
 $$('#about a[data-href]').forEach((a) => a.addEventListener('click', () => api.openLink(a.dataset.href)));
 
+// license
+function renderLicense() {
+  const l = state.license || {};
+  const b = $('#btn-license');
+  b.textContent = l.licensed ? 'Licensed' : 'Activate';
+  b.classList.toggle('on', !!l.licensed);
+  b.hidden = !l.required && !l.licensed;
+  $('#lic-off').hidden = !!l.licensed; $('#lic-on').hidden = !l.licensed;
+  $('#lic-activate').hidden = !!l.licensed; $('#lic-deactivate').hidden = !l.licensed;
+  $('#lic-title').textContent = l.licensed ? 'Offline Captions is activated' : 'Activate Offline Captions';
+  $('#lic-email').textContent = l.email || 'you';
+}
+function openLicense(why) {
+  if (why) $('#lic-why').textContent = why;
+  $('#lic-err').hidden = true;
+  renderLicense();
+  $('#license').showModal();
+}
+$('#btn-license').addEventListener('click', () => openLicense());
+$('#lic-buy').addEventListener('click', () => api.openLink(state.license?.buyUrl));
+$$('#license a[data-href]').forEach((a) => a.addEventListener('click', () => api.openLink(a.dataset.href)));
+$('#lic-activate').addEventListener('click', async () => {
+  const btn = $('#lic-activate'); btn.disabled = true; btn.textContent = 'Activating…';
+  const r = await api.activateLicense($('#lic-key').value);
+  btn.disabled = false; btn.textContent = 'Activate';
+  if (!r.ok) { $('#lic-err').textContent = r.error; $('#lic-err').hidden = false; return; }
+  state.license = { ...state.license, ...r }; renderLicense();
+});
+$('#lic-deactivate').addEventListener('click', async () => {
+  state.license = { ...state.license, ...(await api.deactivateLicense()) }; renderLicense();
+});
+
 // ---------------- boot ----------------
 (async () => {
   if (navigator.platform.toLowerCase().includes('mac')) document.body.classList.add('mac');
@@ -557,6 +594,9 @@ $$('#about a[data-href]').forEach((a) => a.addEventListener('click', () => api.o
   $('#models-dir').textContent = state.info.modelsDir;
   $('#about-models').textContent = state.info.modelsDir;
   $('#about-version').textContent = `v${state.info.version}`;
+  state.license = await api.licenseStatus();
+  renderLicense();
+  api.onLicenseChanged((l) => { state.license = { ...state.license, ...l }; renderLicense(); });
   renderPresets();
   syncStyle();
   renderQueues();
