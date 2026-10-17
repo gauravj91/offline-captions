@@ -5,7 +5,8 @@
 export const DEFAULT_THRESHOLD = 0.6;
 // Parakeet is more confident than Whisper, so it needs a higher bar. Tuned on
 // the 28-clip benchmark: 0.9 flags ~10% of words and catches ~half the errors.
-export const THRESHOLDS = { whisper: 0.6, parakeet: 0.9 };
+// Hinglish: words the cross-script aligner could not anchor get 0.5 -> flagged.
+export const THRESHOLDS = { whisper: 0.6, parakeet: 0.9, hinglish: 0.9 };
 
 export function flagForReview(words, threshold = DEFAULT_THRESHOLD) {
   const low = words.map((w) => !w.fixed && (w.confidence == null || w.confidence < threshold));
