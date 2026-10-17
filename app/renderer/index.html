@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' file:; connect-src 'none'; object-src 'none'; base-uri 'none'">
+<title>Offline Captions</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="brand-dot"></span>Offline Captions</div>
+  <div class="offline-badge" title="Transcription and rendering happen on this computer. Only the one-time model download uses the internet.">
+    <span class="pulse"></span>Runs offline · nothing uploaded
+  </div>
+  <div class="top-actions">
+    <button class="btn ghost sm" id="btn-back" hidden>+ Add videos</button>
+    <button class="btn ghost sm" id="btn-about">About</button>
+  </div>
+</header>
+
+<!-- ============ 1. IMPORT ============ -->
+<main id="screen-import" class="screen">
+  <div class="import-col">
+    <div class="dropzone" id="dropzone" tabindex="0">
+      <div class="dz-icon">⬇</div>
+      <div class="dz-title">Drop your videos here</div>
+      <div class="dz-sub">One clip or a whole batch. MP4, MOV, MKV, WebM.</div>
+      <button class="btn" id="btn-pick">Choose videos</button>
+    </div>
+
+    <section class="card settings">
+      <div class="field">
+        <label>Spoken language</label>
+        <div class="seg" id="seg-lang">
+          <button data-v="en" class="on">English</button>
+          <button data-v="hinglish">Hinglish</button>
+          <button data-v="other">Other</button>
+        </div>
+        <select id="sel-other" hidden>
+          <option value="de">German</option><option value="es">Spanish</option><option value="fr">French</option>
+          <option value="pt">Portuguese</option><option value="it">Italian</option><option value="nl">Dutch</option>
+          <option value="hi">Hindi (Devanagari)</option><option value="ar">Arabic</option><option value="tr">Turkish</option>
+          <option value="pl">Polish</option><option value="ru">Russian</option><option value="ja">Japanese</option>
+          <option value="ko">Korean</option><option value="zh">Chinese</option><option value="id">Indonesian</option>
+        </select>
+        <div class="hint" id="lang-hint"></div>
+      </div>
+      <div class="field">
+        <label>Quality</label>
+        <div class="seg" id="seg-quality">
+          <button data-v="fast">Fast</button>
+          <button data-v="balanced" class="on">Balanced</button>
+          <button data-v="accurate">Accurate</button>
+        </div>
+        <div class="hint" id="quality-hint"></div>
+      </div>
+    </section>
+
+    <section class="card model" id="model-card">
+      <div class="model-row">
+        <div>
+          <div class="model-name" id="model-name">Speech model</div>
+          <div class="model-sub" id="model-sub">Checking…</div>
+        </div>
+        <span class="pill" id="model-pill">…</span>
+      </div>
+      <div class="dl" id="dl" hidden>
+        <div class="bar"><i id="dl-bar"></i></div>
+        <div class="dl-meta"><span id="dl-text">Starting download…</span><span id="dl-pct"></span></div>
+      </div>
+      <div class="model-foot" id="model-foot">Stored on this computer in <code id="models-dir">~/.offline-captions/models</code>. Downloaded once, then every video is transcribed offline.</div>
+    </section>
+
+    <section class="queue" id="queue-import"></section>
+
+    <div class="start-row">
+      <div class="hint" id="start-hint">Add a video to begin.</div>
+      <button class="btn primary lg" id="btn-start" disabled>Transcribe</button>
+    </div>
+  </div>
+</main>
+
+<!-- ============ 2. REVIEW / STYLE / EXPORT ============ -->
+<main id="screen-review" class="screen review" hidden>
+  <aside class="side">
+    <div class="side-title">Videos</div>
+    <div class="queue compact" id="queue-side"></div>
+  </aside>
+
+  <section class="stage-col">
+    <div class="stage" id="stage">
+      <div class="frame" id="frame">
+        <video id="video" playsinline preload="auto"></video>
+        <div class="overlay" id="overlay"></div>
+        <div class="frame-busy" id="frame-busy" hidden><div class="spinner"></div><div id="frame-busy-text">Transcribing…</div></div>
+      </div>
+    </div>
+    <div class="transport">
+      <button class="btn icon" id="btn-play" title="Play / pause (Space)">▶</button>
+      <span class="time" id="time-cur">0:00</span>
+      <input type="range" id="scrub" min="0" max="1000" value="0" class="scrub">
+      <span class="time" id="time-dur">0:00</span>
+      <span class="ratio" id="ratio"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button data-tab="transcript" class="on">Transcript</button>
+      <button data-tab="style">Style</button>
+    </div>
+
+    <div class="tab" id="tab-transcript">
+      <div class="tools">
+        <button class="btn sm yellow" id="btn-next-flag" title="Jump to the next word to check (N)">Next flagged word <b id="flag-count">0</b></button>
+        <label class="toggle"><input type="checkbox" id="chk-fillers" checked><span></span>Remove fillers (um, uh)</label>
+      </div>
+      <div class="review-note" id="review-note"></div>
+      <div class="words" id="words"></div>
+      <div class="learn-toast" id="learn-toast" hidden></div>
+    </div>
+
+    <div class="tab" id="tab-style" hidden>
+      <div class="presets" id="presets"></div>
+      <div class="field">
+        <label>Position <span class="val" id="pos-val"></span></label>
+        <input type="range" id="rng-pos" min="0.08" max="0.6" step="0.01">
+        <div class="range-legend"><span>Bottom</span><span>Middle</span></div>
+      </div>
+      <div class="field">
+        <label>Size <span class="val" id="size-val"></span></label>
+        <input type="range" id="rng-size" min="0.6" max="1.5" step="0.05" value="1">
+        <div class="range-legend"><span>Smaller</span><span>Bigger</span></div>
+      </div>
+      <button class="btn ghost sm" id="btn-reset-style">Reset to preset</button>
+    </div>
+
+    <div class="export">
+      <div class="export-dest">
+        <span class="muted">Save to</span> <span id="out-dir" class="path">same folder as each video</span>
+        <button class="link" id="btn-out">Change</button>
+      </div>
+      <label class="check"><input type="checkbox" id="chk-draft"> Fast draft render</label>
+      <div class="export-btns">
+        <button class="btn primary" id="btn-export">Export MP4 + SRT</button>
+        <button class="btn ghost" id="btn-export-all">Export all</button>
+      </div>
+      <div class="dl" id="ex" hidden>
+        <div class="bar"><i id="ex-bar"></i></div>
+        <div class="dl-meta"><span id="ex-text"></span><span id="ex-pct"></span></div>
+      </div>
+      <div class="ex-done" id="ex-done" hidden>
+        <span id="ex-done-text">Saved</span>
+        <button class="btn sm" id="btn-open">Open folder</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ ABOUT ============ -->
+<dialog id="about">
+  <div class="about-head"><span class="brand-dot"></span><h2>Offline Captions</h2><span class="muted" id="about-version"></span></div>
+  <p class="muted">Animated captions made entirely on your computer. Your videos never leave it.</p>
+  <h3>Speech models &amp; runtime</h3>
+  <ul class="credits">
+    <li><b>NVIDIA Parakeet-TDT 0.6B v2</b>: English speech recognition. © NVIDIA, licensed <a data-href="https://creativecommons.org/licenses/by/4.0/">CC-BY-4.0</a>. <a data-href="https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2">Model card</a></li>
+    <li><b>AI4Bharat IndicConformer</b>: Hindi word timing. <a data-href="https://opensource.org/license/mit">MIT</a>. <a data-href="https://github.com/AI4Bharat/IndicConformerASR">Project</a></li>
+    <li><b>Oriserve Whisper-Hindi2Hinglish</b>: Roman Hinglish text. <a data-href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a>. <a data-href="https://huggingface.co/Oriserve/Whisper-Hindi2Hinglish-Swift">Model card</a></li>
+    <li><b>OpenAI Whisper</b> (via transformers.js / ONNX Runtime): other languages. MIT.</li>
+    <li><b>sherpa-onnx</b> (k2-fsa): on-device inference. <a data-href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a>. <a data-href="https://github.com/k2-fsa/sherpa-onnx">Project</a></li>
+    <li><b>FFmpeg</b> + libass: video decoding and caption burn-in. LGPL-2.1.</li>
+  </ul>
+  <h3>Fonts</h3>
+  <ul class="credits">
+    <li><b>Anton</b> by Vernon Adams and <b>Montserrat</b> by Julieta Ulanovsky et al., <a data-href="https://openfontlicense.org">SIL Open Font License 1.1</a>.</li>
+  </ul>
+  <p class="muted small">Models: <code id="about-models"></code></p>
+  <form method="dialog"><button class="btn">Close</button></form>
+</dialog>
+
+<script src="preview.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
