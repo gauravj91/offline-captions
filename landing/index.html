@@ -161,7 +161,11 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 .joined{display:none;color:var(--accent);font-weight:700}
 .joined:target{display:block}
 .wl-msg{flex:1 1 100%;margin:4px 0 0;font-weight:700;color:var(--accent)}
-.wl-msg.err{color:#ff6b6b}</style>
+.wl-msg.err{color:#ff6b6b}
+
+.next-video{max-width:280px;margin:18px auto 22px;text-align:center}
+.next-video video{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);background:#000;display:block}
+.next-video figcaption{margin-top:8px}</style>
 
 <script type="application/ld+json">
 {
@@ -465,6 +469,10 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         <span class="pill">Coming next · planned, not for sale yet</span>
         <h3>Shorts Studio: long video in, ready Shorts out</h3>
         <p class="muted">Turn a long video or podcast into ready Shorts on your own computer. We haven't built it yet. We'll build it if enough of you want it, so join the waitlist if you do.</p>
+        <figure class="next-video">
+          <video muted loop playsinline preload="none" poster="media/shorts-studio-teaser.jpg" width="540" height="960" data-lazy="media/shorts-studio-teaser.mp4" aria-label="Concept preview of Shorts Studio: a 58-minute podcast is trimmed, three clips are shortlisted, one is cropped to vertical and captioned"></video>
+          <figcaption class="small muted">Concept preview: Shorts Studio is in development. The silence spans, quotes and captions are real output from our engine on a public-domain NASA podcast. The clip picking and crop animation are mock-ups.</figcaption>
+        </figure>
         <div class="next-grid">
           <ul class="checks">
             <li><strong>Clean Cut:</strong> removes silences, suggests filler words and drops retakes, and your captions stay in sync after every cut</li>
@@ -569,7 +577,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     </div>
     <div>
       <h4>Credits</h4>
-      <p class="small">Demo footage: "Connecting Classrooms to Space: Ham Radio Explainer by NASA Astronaut Nichole Ayers" (jsc2025m000040), NASA Johnson Space Center, public domain, via <a href="https://commons.wikimedia.org/wiki/File:Connecting_Classrooms_to_Space-_Ham_Radio_Explainer_by_NASA_Astronaut_Nichole_Ayers_(jsc2025m000040).webm" rel="noopener">Wikimedia Commons</a>. Cropped to 9:16 and captioned by us. NASA does not endorse this product. English speech model: NVIDIA Parakeet-TDT 0.6B v2 (CC-BY-4.0).</p>
+      <p class="small">Demo footage: "Connecting Classrooms to Space: Ham Radio Explainer by NASA Astronaut Nichole Ayers" (jsc2025m000040), NASA Johnson Space Center, public domain, via <a href="https://commons.wikimedia.org/wiki/File:Connecting_Classrooms_to_Space-_Ham_Radio_Explainer_by_NASA_Astronaut_Nichole_Ayers_(jsc2025m000040).webm" rel="noopener">Wikimedia Commons</a>. Cropped to 9:16 and captioned by us. NASA does not endorse this product. Shorts Studio teaser footage: "Houston, We Have a Podcast Live: #BeAnAstronaut" (NASA Johnson Space Center, with Kayla Barron and Anne Roemer), public domain, via <a href="https://commons.wikimedia.org/wiki/File:Houston,_We_Have_a_Podcast_Live;_Hashtag_BeAnAstronaut.webm" rel="noopener">Wikimedia Commons</a>. Cut, cropped and captioned by us. English speech model: NVIDIA Parakeet-TDT 0.6B v2 (CC-BY-4.0).</p>
     </div>
   <div><h4>Compare</h4><ul><li><a href="vs/capcut/">vs CapCut</a></li><li><a href="vs/submagic/">vs Submagic</a></li><li><a href="vs/opusclip/">vs OpusClip</a></li><li><a href="vs/descript/">vs Descript</a></li><li><a href="vs/autosubtitles/">vs AutoSubtitles</a></li><li><a href="alternatives/capcut/">CapCut alternatives</a></li><li><a href="hinglish/vs-aivideocaption/">vs AIVideoCaption</a></li></ul></div><div><h4>Use cases</h4><ul><li><a href="use-cases/coaches/">Coaches & consultants</a></li><li><a href="use-cases/podcast-clips/">Podcast clips</a></li><li><a href="use-cases/course-creators/">Course creators</a></li><li><a href="use-cases/confidential-footage/">Confidential footage</a></li><li><a href="hinglish/">Hinglish captions</a></li></ul></div><div><h4>Learn</h4><ul><li><a href="styles/hormozi-style-captions/">Hormozi-style captions</a></li><li><a href="how-to/add-word-by-word-captions/">Add word-by-word captions</a></li><li><a href="accuracy/">Accuracy benchmark</a></li><li><a href="about/">About the maker</a></li></ul></div></div>
 </footer>
