@@ -1,0 +1,52 @@
+# Desktop installers: npm run dist:mac (on a Mac) / npm run dist:win (on Windows).
+# Build each platform on its own OS so npm installs the matching
+# sherpa-onnx-<platform> and onnxruntime-node native packages.
+# Signing is NOT configured here (see README "Desktop app > Signing").
+appId: fyi.offlinecaptions.app
+productName: Offline Captions
+copyright: Copyright © 2026
+directories:
+  output: dist
+  buildResources: build
+files:
+  - package.json
+  - app/**
+  - src/**
+  - fonts/**
+  - "!app/dev-shots.mjs"
+  - "!**/*.{map,md}"
+  - "!bench/**"
+  - "!landing/**"
+  - "!samples/**"
+  - "!test/**"
+  - "!vendor/**"
+# Native code and anything ffmpeg/libass must read from disk cannot live inside app.asar.
+asarUnpack:
+  - fonts/**
+  - "**/*.node"
+  - node_modules/sherpa-onnx-*/**
+  - node_modules/onnxruntime-node/**
+# LGPL ffmpeg + ffprobe per platform, dropped in vendor/ffmpeg/<platform>-<arch>/ before building.
+# Ends up at <resources>/ffmpeg/, where app/tools.mjs looks first.
+extraResources:
+  - from: vendor/ffmpeg/${platform}-${arch}
+    to: ffmpeg
+    filter: ["**/*"]
+mac:
+  category: public.app-category.video
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  # identity / notarize: set when the Apple Developer ID is available (see README)
+dmg:
+  title: Offline Captions
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Offline Captions
