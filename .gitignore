@@ -6,3 +6,4 @@ node_modules/
 models/
 dist/
 vendor/ffmpeg/*/
+server/secrets.local.json
