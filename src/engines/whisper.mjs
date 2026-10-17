@@ -88,7 +88,7 @@ export function windows(audio, { max = 28, min = 18 } = {}) {
  * @param {Float32Array} audio 16 kHz mono
  * @returns {Promise<{text:string, words:{text:string,start:number,end:number,confidence:number|null}[]}>}
  */
-export async function transcribeWhisper(audio, { quality = 'fast', language, vocabulary = [] } = {}) {
+export async function transcribeWhisper(audio, { quality = 'fast', language, vocabulary = [], onProgress } = {}) {
   const model = MODELS[quality] || quality;
   const asr = await getTranscriber(model);
   const tk = asr.tokenizer;
@@ -117,6 +117,7 @@ export async function transcribeWhisper(audio, { quality = 'fast', language, voc
     const tokens = rec.steps.filter((t) => t.id < eot)
       .map((t) => ({ text: tk.decode([t.id], { skip_special_tokens: true }), p: t.p }));
     all.push(...alignConfidence(words, tokens));
+    onProgress?.(b / audio.length);
   }
   return { text: all.map((w) => w.text).join(' '), words: fixTimes(all) };
 }
