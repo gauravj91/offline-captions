@@ -1,0 +1,15 @@
+{
+  "name": "offline-captions-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node serve.mjs"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "esbuild": "^0.25.0",
+    "mp4-muxer": "^5.2.1",
+    "mp4box": "^0.5.4"
+  }
+}
