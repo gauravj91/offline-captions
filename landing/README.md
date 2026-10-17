@@ -71,3 +71,9 @@ App screenshots: `media/app-review.jpg` and `media/app-style-export.jpg` are fro
 - **Our claims** you must be able to stand behind at launch: Mac + Windows; fully offline; unlimited videos; no watermark; export at source resolution + SRT; batch; dictionary that learns corrections; yellow review words; filler removal; Hinglish mode in Roman script. Accuracy wording is limited to our own benchmark (7.6% vs 9.6% WER, 28 clips) and explicitly says the CapCut/Submagic head-to-head is pending. Hindi (Devanagari) and other Indian languages are described only as "coming".
 - **Removed from the old page until decided**: the 30-day no-questions refund and "refundable any time before launch". Use `MONEY_BACK_DAYS` / `PREORDER_REFUND` to bring them back.
 - Add an imprint / privacy page before selling from Germany/EU.
+
+## Shorts Studio waitlist (v2 demand test, added 17 Oct 2026)
+- Home and `/hinglish/` pricing show a "Coming next: Shorts Studio" card: **planned, not for sale**, no checkout. Planned prices live in `site-config.js` (`PRICE_SHORTS_BUNDLE` $79, `PRICE_SHORTS_UPGRADE` $40, `PRICE_INR_SHORTS_BUNDLE` ₹2,499). A matching FAQ entry sits in the page and the FAQPage JSON-LD (no Offer is added, because it isn't for sale).
+- Every waitlist form posts to the licence Worker (`WAITLIST_ACTION` → `/waitlist`). Segments: `launch`, `launch-hinglish`, `shorts-studio`, `shorts-studio-hinglish`. The optional intent checkboxes are `upgrade40` and `bundle79`.
+- Read the results: `GET /waitlist/stats` or `/waitlist/export` (CSV), using `Authorization: Bearer <WAITLIST_ADMIN_TOKEN>` (the token is in the deploy secrets). `@example.com` test signups are left out.
+- **Success metric:** delay or kill v2 if fewer than ~10% of captions buyers and waitlisters opt into Shorts Studio (shorts-studio* signups, or intent ticked, ÷ captions buyers + launch waitlisters). Also watch upgrade40 vs bundle79 to see which price shape people want.
