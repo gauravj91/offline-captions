@@ -213,3 +213,8 @@ dialog form { text-align: right; margin-top: 14px; }
 /* sidebar queue: name on its own line, status underneath */
 .queue.compact .qi { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .queue.compact .qi .right { justify-self: start; }
+
+.lic-key { width: 100%; box-sizing: border-box; background: #0b0b0d; color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; resize: vertical; word-break: break-all; }
+.lic-err { color: #ff7a7a; margin-top: 8px; font-size: 13px; }
+.lic-actions { display: flex; gap: 8px; justify-content: flex-end; }
+#btn-license.on { color: var(--accent); }
