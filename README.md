@@ -16,7 +16,9 @@ node src/cli.mjs my-video.mp4 --style bold
 
 The first run downloads the speech model and caches it in `~/.offline-captions/models` (Parakeet ~660 MB; Whisper models 80–800 MB).
 
-**Engines.** English uses **NVIDIA Parakeet-TDT 0.6B v2** (via sherpa-onnx), our most accurate and fastest option (7.6% WER on our 28-clip benchmark vs 9.6% for Whisper-small). Other languages use Whisper (`--lang de` etc.); force one with `--engine parakeet|whisper`.
+**Engines.** English uses **NVIDIA Parakeet-TDT 0.6B v2** (via sherpa-onnx), our most accurate and fastest option (7.6% WER on our 28-clip benchmark vs 9.6% for Whisper-small). Other languages use Whisper (`--lang de` etc.); force one with `--engine parakeet|whisper|hinglish`.
+
+**Hinglish (`--lang hinglish`).** Roman-script captions for Hindi-English speech ("Usko gaali de do, complaint kar lo"). Oriserve Whisper-Hindi2Hinglish (Apache-2.0) writes the text; AI4Bharat IndicConformer-hi (MIT) hears the same audio in Devanagari for word timing; `hinglish-align.mjs` matches the two across scripts. Words it can't time precisely are flagged for review. `--quality fast|balanced` = Swift (~150 MB + 200 MB timing model), `accurate` = Apex (~1 GB). On 10 real creator clips (CoSHE-Eval), script-blind WER is 22–24% vs 30% for IndicConformer alone, and that measure overstates errors because spellings differ across scripts.
 Parakeet model licence: CC-BY-4.0, so credit "NVIDIA Parakeet-TDT 0.6B v2" in the app's About/credits.
 
 Options:
@@ -24,8 +26,8 @@ Options:
 | Flag | What it does |
 |---|---|
 | `--style bold\|clean\|punch\|reveal` | Caption look (see below) |
-| `--engine parakeet\|whisper` | Default: Parakeet for English, Whisper otherwise |
-| `--quality fast\|balanced\|accurate` | Whisper only: base / small / large-v3-turbo |
+| `--engine parakeet\|whisper\|hinglish` | Default: Parakeet for English, Hinglish for `--lang hinglish`, Whisper otherwise |
+| `--quality fast\|balanced\|accurate` | Whisper: base / small / large-v3-turbo. Hinglish: Swift / Swift / Apex |
 | `--dict dictionary.json` | Personal dictionary, e.g. `{"fit lab": "FitLab"}` (its values are also fed to the model) |
 | `--words "Hormozi,FitLab"` | Extra names/brands to listen for |
 | `--lang en` | Force language (default: auto) |
@@ -56,6 +58,8 @@ video ──ffmpeg──> 16 kHz audio ──Whisper (ONNX, local)──> words 
 | `src/ffmpeg.mjs` | Probe video, extract audio, run ffmpeg (`FFMPEG_PATH`/`FFPROBE_PATH` override) |
 | `src/transcribe.mjs` | Engine switch (Parakeet default, Whisper fallback) |
 | `src/engines/parakeet.mjs` | Parakeet via sherpa-onnx: download, word timing, confidence |
+| `src/engines/hinglish.mjs` | Roman Hinglish: Whisper-Hinglish text + IndicConformer timing |
+| `src/engines/hinglish-align.mjs` | Cross-script word alignment (consonant skeletons + DP) |
 | `src/engines/whisper.mjs` | Whisper via transformers.js: vocabulary prompt, windowing, confidence |
 | `src/vocabulary.mjs` | Snaps near-misses onto your names/brands ("Ormozi" → "Hormozi") |
 | `src/review.mjs` | Yellow-word flags (per-engine thresholds) |
