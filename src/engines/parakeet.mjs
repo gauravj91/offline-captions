@@ -9,8 +9,8 @@ import { windows } from './whisper.mjs';
 
 const require = createRequire(import.meta.url);
 const SR = 16000;
-const REPO = 'https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8/resolve/main/';
-const FILES = ['encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt'];
+export const REPO = 'https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8/resolve/main/';
+export const FILES = ['encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt'];
 
 export function modelDir() {
   const base = process.env.CAPTIONS_MODEL_DIR || path.join(os.homedir(), '.offline-captions', 'models');
@@ -73,15 +73,17 @@ export function tokensToWords({ tokens, timestamps, durations = [], ys_log_probs
   return words.filter((w) => w.text);
 }
 
-export async function transcribeParakeet(audio) {
+export async function transcribeParakeet(audio, { onProgress } = {}) {
   const rec = await getRecognizer();
   const all = [];
   // Parakeet handles long context, but windowing keeps memory flat on 8 GB laptops.
-  for (const [a, b] of windows(audio, { max: 55, min: 35 })) {
+  const wins = windows(audio, { max: 55, min: 35 });
+  for (const [a, b] of wins) {
     const st = rec.createStream();
     st.acceptWaveform({ sampleRate: SR, samples: audio.subarray(a, b) });
     rec.decode(st);
     all.push(...tokensToWords(rec.getResult(st), a / SR));
+    onProgress?.(b / audio.length);
   }
   return { text: all.map((w) => w.text).join(' '), words: all };
 }
