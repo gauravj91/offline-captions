@@ -97,3 +97,33 @@ test('vocabulary snaps near-misses and joined words, leaves others', () => {
   assert.ok(out.find((w) => w.text === 'FitLab').snapped);
   assert.equal(out.find((w) => w.text === 'FitLab').start, 8);
 });
+
+import { pickEngine } from '../src/transcribe.mjs';
+import { alignWords, skeleton } from '../src/engines/hinglish-align.mjs';
+import { ctcWords, fillEnds } from '../src/engines/hinglish.mjs';
+
+test('hinglish language picks the hinglish engine', () => {
+  assert.equal(pickEngine({ language: 'hinglish' }), 'hinglish');
+  assert.equal(pickEngine({ language: 'hi-en' }), 'hinglish');
+  assert.equal(pickEngine({ language: 'hi' }), 'whisper');
+  assert.equal(pickEngine({}), 'parakeet');
+});
+
+test('skeleton matches Devanagari loanwords to English spellings', () => {
+  for (const [d, r] of [['कस्टम', 'custom'], ['स्वागत', 'svaagat'], ['ट्यूटोरियल', 'tutorial'], ['में', 'mein']]) assert.equal(skeleton(d), skeleton(r));
+});
+
+test('roman words borrow times across scripts; unmatched ones are interpolated', () => {
+  const timed = 'आज हम कस्टम एनिमेशन सीखेंगे'.split(' ').map((text, i) => ({ text, start: i, end: i + 0.4 }));
+  const out = alignWords('Aaj hum custom wala animation seekhenge'.split(' '), timed, 6);
+  assert.deepEqual(out.map((w) => w.anchored), [true, true, true, false, true, true]);
+  assert.equal(out[2].start, 2); assert.equal(out[4].start, 3);
+  assert.ok(out[3].start >= out[2].end && out[3].end <= out[4].start);
+});
+
+test('ctc tokens group into words and ends stretch to the next word', () => {
+  const w = ctcWords({ tokens: [' कस', '्टम', '▁है'], timestamps: [1, 1.2, 2] }, 10);
+  assert.deepEqual(w.map((x) => x.text), ['कस्टम', 'है']);
+  assert.equal(w[0].start, 11);
+  assert.equal(fillEnds(w)[0].end, 11.6);
+});
