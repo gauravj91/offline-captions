@@ -8,8 +8,15 @@
 window.SITE_CONFIG = {
   APP_NAME: "Offline Captions",          // working name
   SITE_URL: "https://YOUR-DOMAIN.example", // TODO(Gaurav): domain undecided. Also replace in every *.html, robots.txt, sitemap.xml, llms.txt
-  CHECKOUT_URL: "#checkout",             // Stripe Payment Link / Lemon Squeezy / Paddle / Gumroad
-  CHECKOUT_URL_INR: "#checkout",         // optional separate checkout for the ₹ price (Razorpay, Lemon Squeezy with INR...)
+  CHECKOUT_URL: "",                      // optional fallback link; Paddle overlay checkout (below) is used when configured
+
+  /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
+  PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
+  PADDLE_CLIENT_TOKEN: "test_614d5608c73d6ff75f543edf96c",
+  PADDLE_PRICE_ID: "pri_01m5494svf188dx7n4yf7j4dm4",   // founding pre-order price (USD 29 / INR 1,499 / EUR 29 / GBP 25)
+  PADDLE_PRICE_ID_FULL: "pri_01m5494s3ag36bywbmnq64sgp7", // after launch (USD 39 / INR 1,999 / EUR 39 / GBP 35 / CAD 49 / AUD 59)
+  LICENSE_API: "https://offline-captions-api.hirewire.workers.dev",
+  CHECKOUT_URL_INR: "",                  // optional separate checkout for the ₹ price (Razorpay, Lemon Squeezy with INR...)
   WAITLIST_ACTION: "#waitlist",          // form POST endpoint (Formspree, Buttondown, Tally...)
   CONTACT_EMAIL: "",                     // TODO(Gaurav): support address shown in the footer when set
 
