@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { verifyPaddleSignature } from "../src/worker.js";
+import { register } from "node:module";
+register("./cf-loader.mjs", import.meta.url); // stubs the "cloudflare:workers" module outside Workers
+const { default: worker, verifyPaddleSignature } = await import("../src/worker.js");
 
 const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
 const b64u = (b) => Buffer.from(b).toString("base64url");
