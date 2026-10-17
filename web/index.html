@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offline Captions for the web: free animated captions, made in your browser</title>
+<meta name="description" content="Drop a short video, get word-by-word animated captions and an SRT. Transcription and rendering run in your browser: your video never leaves your device.">
+<meta name="theme-color" content="#0b0b0d">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="brand-dot"></span>Offline Captions <span class="brand-tag">web</span></div>
+  <div class="offline-badge" title="Your video and its audio are processed by this browser tab. Nothing is uploaded. Only the speech model is downloaded, once.">
+    <span class="pulse"></span><span class="badge-long">Runs in your browser · your video never leaves this device</span><span class="badge-short">Nothing uploaded</span>
+  </div>
+  <div class="top-actions">
+    <button class="btn ghost sm" id="btn-new" hidden>New<span class="hide-sm"> video</span></button>
+    <button class="btn sm desk" id="btn-desktop">Desktop app</button>
+  </div>
+</header>
+
+<!-- ============ 1. IMPORT ============ -->
+<main id="screen-import" class="screen">
+  <div class="import-col">
+    <div class="hero">
+      <h1>Animated captions for your short video. <span>Made right here, in your browser.</span></h1>
+      <p class="muted">Free for clips up to <b id="lim-sec">60 s</b>: word-by-word captions in 4 styles, MP4 up to 1080p with no watermark, and an SRT file.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone" tabindex="0">
+      <div class="dz-icon">⬇</div>
+      <div class="dz-title">Drop a video here</div>
+      <div class="dz-sub">MP4 or MOV works best (WebM too). One clip at a time on the web.</div>
+      <button class="btn" id="btn-pick">Choose a video</button>
+      <input type="file" id="file" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden>
+    </div>
+
+    <section class="qi big" id="clip" hidden>
+      <video class="thumb-v" id="thumb" muted playsinline preload="metadata"></video>
+      <div class="info"><div class="name" id="clip-name"></div><div class="meta" id="clip-meta"></div></div>
+      <button class="x" id="clip-x" title="Remove">×</button>
+    </section>
+
+    <section class="limit-note" id="limit-note" hidden></section>
+
+    <section class="card settings">
+      <div class="field">
+        <label for="sel-lang">Spoken language</label>
+        <select id="sel-lang">
+          <option value="en" selected>English</option>
+          <option value="auto">Detect automatically</option>
+          <option value="de">German</option><option value="es">Spanish</option><option value="fr">French</option>
+          <option value="pt">Portuguese</option><option value="it">Italian</option><option value="nl">Dutch</option>
+          <option value="hi">Hindi (Devanagari)</option><option value="ar">Arabic</option><option value="tr">Turkish</option>
+          <option value="pl">Polish</option><option value="ru">Russian</option><option value="ja">Japanese</option>
+          <option value="ko">Korean</option><option value="zh">Chinese</option><option value="id">Indonesian</option>
+          <option value="hinglish">Hinglish (desktop app)</option>
+        </select>
+        <div class="hint" id="lang-hint">Whisper, running in this tab. The desktop app uses NVIDIA Parakeet for English: more accurate and faster.</div>
+      </div>
+      <div class="field">
+        <label>Model</label>
+        <div class="seg" id="seg-model">
+          <button data-v="base" class="on">Fast</button>
+          <button data-v="small">Better</button>
+        </div>
+        <div class="hint" id="model-hint"></div>
+      </div>
+    </section>
+
+    <section class="card model" id="model-card">
+      <div class="model-row">
+        <div>
+          <div class="model-name" id="model-name">Speech model</div>
+          <div class="model-sub" id="model-sub">Checking…</div>
+        </div>
+        <span class="pill" id="model-pill">…</span>
+      </div>
+      <div class="dl" id="dl" hidden>
+        <div class="bar"><i id="dl-bar"></i></div>
+        <div class="dl-meta"><span id="dl-text">Starting…</span><span id="dl-pct"></span></div>
+      </div>
+      <div class="model-foot">Downloaded once from Hugging Face and kept in this browser's cache. Your video is never sent anywhere: the audio is read and transcribed inside this tab.</div>
+    </section>
+
+    <div class="start-row">
+      <div class="hint" id="start-hint">Add a video to begin.</div>
+      <button class="btn primary lg" id="btn-start" disabled>Transcribe</button>
+    </div>
+    <div class="err" id="err" hidden></div>
+  </div>
+</main>
+
+<!-- ============ 2. REVIEW / STYLE / EXPORT ============ -->
+<main id="screen-review" class="screen review" hidden>
+  <section class="stage-col">
+    <div class="stage" id="stage">
+      <div class="frame" id="frame">
+        <video id="video" playsinline preload="auto"></video>
+        <canvas class="overlay" id="overlay"></canvas>
+        <div class="frame-busy" id="frame-busy" hidden><div class="spinner"></div><div id="frame-busy-text">Transcribing…</div><div class="bar busy-bar"><i id="busy-bar"></i></div></div>
+      </div>
+    </div>
+    <div class="transport">
+      <button class="btn icon" id="btn-play" title="Play / pause (Space)">▶</button>
+      <span class="time" id="time-cur">0:00</span>
+      <input type="range" id="scrub" min="0" max="1000" value="0" class="scrub" aria-label="Seek">
+      <span class="time" id="time-dur">0:00</span>
+      <span class="ratio" id="ratio"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button data-tab="transcript" class="on">Transcript</button>
+      <button data-tab="style">Style</button>
+    </div>
+
+    <div class="tab" id="tab-transcript">
+      <div class="tools">
+        <button class="btn sm yellow" id="btn-next-flag" title="Jump to the next word to check (N)">Next flagged word <b id="flag-count">0</b></button>
+        <label class="toggle"><input type="checkbox" id="chk-fillers" checked><span></span>Remove fillers (um, uh)</label>
+      </div>
+      <div class="review-note" id="review-note"></div>
+      <div class="words" id="words"></div>
+      <div class="learn-toast" id="learn-toast" hidden></div>
+    </div>
+
+    <div class="tab" id="tab-style" hidden>
+      <div class="presets" id="presets"></div>
+      <div class="field">
+        <label>Position <span class="val" id="pos-val"></span></label>
+        <input type="range" id="rng-pos" min="0.08" max="0.6" step="0.01">
+        <div class="range-legend"><span>Bottom</span><span>Middle</span></div>
+      </div>
+      <div class="field">
+        <label>Size <span class="val" id="size-val"></span></label>
+        <input type="range" id="rng-size" min="0.6" max="1.5" step="0.05" value="1">
+        <div class="range-legend"><span>Smaller</span><span>Bigger</span></div>
+      </div>
+      <button class="btn ghost sm" id="btn-reset-style">Reset to preset</button>
+    </div>
+
+    <div class="export">
+      <div class="export-dest"><span class="muted">Exports are made in this tab and saved to your downloads.</span> <span id="ex-res" class="path"></span></div>
+      <div class="export-btns">
+        <button class="btn primary" id="btn-export">Export MP4</button>
+        <button class="btn ghost" id="btn-srt">SRT</button>
+      </div>
+      <div class="dl" id="ex" hidden>
+        <div class="bar"><i id="ex-bar"></i></div>
+        <div class="dl-meta"><span id="ex-text"></span><span id="ex-pct"></span></div>
+      </div>
+      <div class="ex-done" id="ex-done" hidden>
+        <span id="ex-done-text">Saved</span>
+        <a class="btn sm" id="ex-again" download>Download again</a>
+      </div>
+      <div class="upsell" id="upsell-after" hidden></div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ DESKTOP APP ============ -->
+<dialog id="desktop">
+  <div class="about-head"><span class="brand-dot"></span><h2>Offline Captions for Mac &amp; Windows</h2></div>
+  <p class="muted" id="desk-why">See the value here, get more on your computer. Same captions, no limits.</p>
+  <ul class="credits" id="desk-list"></ul>
+  <p class="price"><b id="desk-price">$29</b> <span class="muted" id="desk-price-note">founding price, one-time</span></p>
+  <p class="muted small">Still free here: clips up to 60 s, all four styles, 1080p MP4 with no watermark, and SRT files.</p>
+  <form method="dialog" class="dlg-actions"><button class="btn ghost">Keep using the web version</button><a class="btn primary" id="desk-cta" target="_blank" rel="noopener">Get the desktop app</a></form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="site-config.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
