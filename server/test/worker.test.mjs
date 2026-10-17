@@ -8,7 +8,9 @@ const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "
 const b64u = (b) => Buffer.from(b).toString("base64url");
 const store = new Map();
 const env = {
-  KV: { get: async (k) => store.get(k) ?? null, put: async (k, v) => void store.set(k, v) },
+  KV: { get: async (k) => store.get(k) ?? null, put: async (k, v) => void store.set(k, v),
+        list: async (p) => [...store.entries()].filter(([k]) => k.startsWith(p)) },
+  WAITLIST_ADMIN_TOKEN: "admintok",
   PADDLE_WEBHOOK_SECRET: "whsec_test", DEVICE_LIMIT: "2", ALLOWED_ORIGINS: "*", PADDLE_ENV: "test",
   LICENSE_PRIVATE_KEY: b64u(await crypto.subtle.exportKey("pkcs8", kp.privateKey)),
   LICENSE_PUBLIC_KEY: b64u(await crypto.subtle.exportKey("raw", kp.publicKey)),
@@ -52,4 +54,23 @@ test("purchase -> key -> activate -> limit -> deactivate -> refund revokes", asy
   const v = await (await post("/api/validate", { key: lic.key, device_id: "d1" })).json();
   assert.equal(v.status, "revoked"); assert.equal(v.ok, false);
   assert.equal((await post("/api/activate", { key: lic.key, device_id: "d9" })).status, 403);
+});
+
+test("waitlist: form + JSON signups, intent merge, honeypot, export auth", async () => {
+  const form = (fields, headers = {}) => { const f = new FormData(); for (const [k, v] of fields) f.append(k, v);
+    return worker.fetch(new Request("https://x/waitlist", { method: "POST", body: f, headers }), env); };
+  let r = await form([["email", "A@Ex.test"], ["segment", "shorts-studio"], ["intent", "upgrade40"], ["page", "/"]], { referer: "https://site.test/#pricing" });
+  assert.equal(r.status, 303); assert.equal(r.headers.get("location"), "https://site.test/#joined");
+  r = await worker.fetch(new Request("https://x/waitlist", { method: "POST", body: JSON.stringify({ email: "a@ex.test", segment: "shorts-studio", intent: ["bundle79", "bogus"] }),
+    headers: { "content-type": "application/json", accept: "application/json" } }), env);
+  assert.equal(r.status, 200);
+  assert.equal((await form([["email", "nope"]], { accept: "application/json" })).status, 400);
+  await form([["email", "bot@ex.test"], ["_gotcha", "x"]], { accept: "application/json" });
+  await form([["email", "b@ex.test"], ["segment", "evil:key"]], { accept: "application/json" });
+  assert.equal((await worker.fetch(new Request("https://x/waitlist/stats"), env)).status, 401);
+  const st = await (await worker.fetch(new Request("https://x/waitlist/stats", { headers: { authorization: "Bearer admintok" } }), env)).json();
+  assert.equal(st.segments["shorts-studio"], 1); assert.equal(st.segments.launch, 1);
+  assert.equal(st.intent["shorts-studio:upgrade40"], 1); assert.equal(st.intent["shorts-studio:bundle79"], 1);
+  const csv = await (await worker.fetch(new Request("https://x/waitlist/export?token=admintok"), env)).text();
+  assert.match(csv, /"a@ex.test","shorts-studio","upgrade40 bundle79"/); assert.doesNotMatch(csv, /bot@ex.test/);
 });
