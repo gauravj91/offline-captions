@@ -1,4 +1,4 @@
-# Builds test installers for Mac (Apple Silicon + Intel) and Windows on GitHub's
+# Builds test installers for Mac (Apple Silicon; Intel runners retired) and Windows on GitHub's
 # machines and attaches them to a GitHub Release, so nobody needs npm locally.
 # Run it: Actions tab -> "Build desktop app" -> Run workflow (or push a v* tag).
 # NOTE: test builds bundle a GPL ffmpeg (libx264) and are not Apple-notarized.
@@ -16,7 +16,6 @@ jobs:
       matrix:
         include:
           - { os: macos-14, plat: darwin, arch: arm64, mr: arm64 }
-          - { os: macos-13, plat: darwin, arch: x64, mr: amd64 }
           - { os: windows-latest, plat: win32, arch: x64 }
     runs-on: ${{ matrix.os }}
     steps:
