@@ -3,7 +3,8 @@
 // that the desktop app verifies offline, and track device activations in KV.
 //
 // Bindings
-//   KV                    KV namespace (licenses, activations, webhook dedupe)
+//   STORE                 Durable Object namespace for class Store (SQLite-backed, strongly consistent)
+//   KV                    (tests only) Map-backed stand-in used when STORE is absent
 // Vars (plain text)
 //   PADDLE_ENV            "sandbox" | "production"
 //   DEVICE_LIMIT          max active devices per license (default 2)
@@ -13,9 +14,11 @@
 //   PADDLE_WEBHOOK_SECRET endpoint secret key of the Paddle notification destination
 //   LICENSE_PRIVATE_KEY   base64url PKCS8 Ed25519 private key
 //
-// KV layout
+// Key layout
 //   lic:<lid>    license record (JSON)        txn:<txn_id> -> lid
 //   cust:<ctm>   {email, name}                evt:<event_id> -> "1" (dedupe, 30 days)
+
+import { DurableObject } from "cloudflare:workers";
 
 const enc = new TextEncoder();
 const b64u = {
@@ -79,13 +82,36 @@ function timingSafeEqual(a, b) {
   return r === 0;
 }
 
-// ---------- storage helpers ----------
-const getJSON = async (env, k) => { const v = await env.KV.get(k); return v ? JSON.parse(v) : null; };
-const putJSON = (env, k, v, opts) => env.KV.put(k, JSON.stringify(v), opts);
+// ---------- storage ----------
+// One SQLite-backed Durable Object ("Store") holds all records. It is strongly consistent, unlike
+// Workers KV, whose edge caching (including cached "not found" results) made the thank-you page
+// miss keys issued seconds earlier. Tests pass a Map-backed KV instead (env.KV).
+export class Store extends DurableObject {
+  async get(k) {
+    const r = await this.ctx.storage.get(k);
+    if (!r) return null;
+    if (r.exp && r.exp < Date.now() / 1000) { await this.ctx.storage.delete(k); return null; }
+    return r.v;
+  }
+  async put(k, v, ttl) {
+    await this.ctx.storage.put(k, { v, exp: ttl ? Math.floor(Date.now() / 1000) + ttl : null });
+  }
+}
+function store(env) {
+  if (!env.STORE) return env.KV;
+  const stub = env.STORE.get(env.STORE.idFromName("main"));
+  return {
+    // LEGACY_KV: read-only fallback for records written before the move to the Durable Object (17 Oct 2026 sandbox tests).
+    get: async (k) => (await stub.get(k)) ?? (env.LEGACY_KV && !k.startsWith("evt:") ? await env.LEGACY_KV.get(k) : null),
+    put: (k, v, opts = {}) => stub.put(k, v, opts.expirationTtl || null) };
+}
+
+const getJSON = async (env, k) => { const v = await store(env).get(k); return v ? JSON.parse(v) : null; };
+const putJSON = (env, k, v, opts) => store(env).put(k, JSON.stringify(v), opts);
 const newId = () => b64u.enc(crypto.getRandomValues(new Uint8Array(12)));
 
 async function issueLicense(env, txn) {
-  const existing = await env.KV.get(`txn:${txn.id}`);
+  const existing = await store(env).get(`txn:${txn.id}`);
   if (existing) return getJSON(env, `lic:${existing}`);
   const item = txn.items?.[0] || {};
   const tier = item.price?.custom_data?.tier || "full";
@@ -101,12 +127,12 @@ async function issueLicense(env, txn) {
     devices: [],
   };
   await putJSON(env, `lic:${lid}`, rec);
-  await env.KV.put(`txn:${txn.id}`, lid);
+  await store(env).put(`txn:${txn.id}`, lid);
   return rec;
 }
 
 async function setStatusByTxn(env, txnId, status, reason) {
-  const lid = await env.KV.get(`txn:${txnId}`);
+  const lid = await store(env).get(`txn:${txnId}`);
   if (!lid) return null;
   const rec = await getJSON(env, `lic:${lid}`);
   rec.status = status; rec.status_reason = reason; rec.status_at = new Date().toISOString();
@@ -120,7 +146,7 @@ async function handleWebhook(req, env) {
   if (!(await verifyPaddleSignature(env.PADDLE_WEBHOOK_SECRET, req.headers.get("paddle-signature"), raw)))
     return json({ error: "bad_signature" }, 401);
   const evt = JSON.parse(raw);
-  if (evt.event_id && (await env.KV.get(`evt:${evt.event_id}`))) return json({ ok: true, duplicate: true });
+  if (evt.event_id && (await store(env).get(`evt:${evt.event_id}`))) return json({ ok: true, duplicate: true });
   const d = evt.data || {};
   let result = "ignored";
   switch (evt.event_type) {
@@ -147,7 +173,7 @@ async function handleWebhook(req, env) {
       }
       break;
   }
-  if (evt.event_id) await env.KV.put(`evt:${evt.event_id}`, "1", { expirationTtl: 60 * 60 * 24 * 30 });
+  if (evt.event_id) await store(env).put(`evt:${evt.event_id}`, "1", { expirationTtl: 60 * 60 * 24 * 30 });
   return json({ ok: true, result });
 }
 
@@ -168,7 +194,7 @@ async function handleApi(req, env, path) {
     const u = new URL(req.url);
     const txn = u.searchParams.get("txn"); const email = (u.searchParams.get("email") || "").toLowerCase();
     if (!txn) return json({ error: "missing_txn" }, 400);
-    const lid = await env.KV.get(`txn:${txn}`);
+    const lid = await store(env).get(`txn:${txn}`);
     if (!lid) return json({ status: "pending" }, 202);
     const rec = await getJSON(env, `lic:${lid}`);
     const knownEmail = rec.email || (rec.customer_id && (await getJSON(env, `cust:${rec.customer_id}`))?.email);
