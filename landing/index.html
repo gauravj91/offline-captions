@@ -149,7 +149,19 @@ footer li{margin-bottom:4px}
 [hidden]{display:none!important}
 th:first-child{position:sticky;left:0;z-index:1;background:var(--bg)}
 thead th:first-child{background:var(--bg2)}
-@media (max-width:620px){tbody th{min-width:112px;width:auto;padding-left:12px;padding-right:10px}th,td{padding:12px 12px}}</style>
+@media (max-width:620px){tbody th{min-width:112px;width:auto;padding-left:12px;padding-right:10px}th,td{padding:12px 12px}}
+
+.next-card{margin-top:20px;border-style:dashed}
+.next-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start}
+@media (max-width:860px){.next-grid{grid-template-columns:1fr}}
+form.next-form{margin:16px 0 8px;max-width:none}
+fieldset.intent{border:0;padding:0;margin:4px 0;flex:1 1 100%;display:flex;flex-direction:column;gap:6px}
+fieldset.intent label{display:flex;gap:8px;align-items:center;font-size:.92rem;color:var(--muted);cursor:pointer}
+fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
+.joined{display:none;color:var(--accent);font-weight:700}
+.joined:target{display:block}
+.wl-msg{flex:1 1 100%;margin:4px 0 0;font-weight:700;color:var(--accent)}
+.wl-msg.err{color:#ff6b6b}</style>
 
 <script type="application/ld+json">
 {
@@ -216,7 +228,9 @@ thead th:first-child{background:var(--bg2)}
         {"@type": "Question", "name": "Can I get an SRT subtitle file as well as the video?",
          "acceptedAnswer": {"@type": "Answer", "text": "Yes. Every export gives you the captioned MP4 with the animation burned in, plus a standard .srt file for YouTube, LinkedIn or your video editor."}},
         {"@type": "Question", "name": "Can it caption a batch of videos at once?",
-         "acceptedAnswer": {"@type": "Answer", "text": "Yes. Drop in a folder of clips, pick your style, and it captions them one after another while you do something else. There is no per-video charge."}}
+         "acceptedAnswer": {"@type": "Answer", "text": "Yes. Drop in a folder of clips, pick your style, and it captions them one after another while you do something else. There is no per-video charge."}},
+        {"@type": "Question", "name": "What is Shorts Studio, and can I buy it now?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Not yet. Shorts Studio is a planned add-on that turns a long video or podcast into ready Shorts on your own computer: it cuts silences and retakes, shortlists 8–15 clips for you to pick from, crops to vertical around whoever is speaking, and keeps your captions in sync. The planned price is $79 once with captions included, or a $40 upgrade for Offline Captions owners. It isn't for sale and nothing ships today. Join the Shorts Studio waitlist and we'll email you once if we build it."}}
       ]
     }
   ]
@@ -447,7 +461,39 @@ thead th:first-child{background:var(--bg2)}
           </div>
           <p class="foot">Year two costs the same again on every subscription. Submagic Starter also caps you at 15 videos a month and 2 minutes each; Submagic Pro is $276 a year. List prices checked October 2026, sources in the table above. At the $39 regular price the first bar would read $39.</p>
         </div>
+            <div class="card next-card" id="shorts-studio">
+        <span class="pill">Coming next · planned, not for sale yet</span>
+        <h3>Shorts Studio: long video in, ready Shorts out</h3>
+        <p class="muted">Turn a long video or podcast into ready Shorts on your own computer. We haven't built it yet. We'll build it if enough of you want it, so join the waitlist if you do.</p>
+        <div class="next-grid">
+          <ul class="checks">
+            <li><strong>Clean Cut:</strong> removes silences, suggests filler words and drops retakes, and your captions stay in sync after every cut</li>
+            <li><strong>Clip shortlist:</strong> 8–15 candidate clips snapped to sentence ends, and you pick the ones to keep</li>
+            <li><strong>Speaker-aware vertical crop:</strong> follows whoever is talking and stacks two people for interviews</li>
+            <li><strong>Your captions on top:</strong> the same styles and dictionary you already use</li>
+            <li>Offline on Windows and Mac, no credits, no uploads</li>
+            <li>Hinglish-native, using the same Roman-script engine as Offline Captions.</li>
+          </ul>
+          <div>
+            <p class="big"><span data-cfg="PRICE_SHORTS_BUNDLE">$79</span> <small>once · planned</small></p>
+            <p class="small muted">Captions included. Already own Offline Captions? Upgrade for <span data-cfg="PRICE_SHORTS_UPGRADE">$40</span>. Planned prices, may change before launch.</p>
+            <form class="waitlist next-form" data-waitlist method="POST" action="#waitlist">
+              <input type="hidden" name="segment" value="shorts-studio">
+              <input type="hidden" name="page" value="/">
+              <label class="sr" for="ss-email">Email address</label>
+              <input id="ss-email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+              <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
+              <fieldset class="intent"><legend class="sr">Optional: what would you pay?</legend>
+                <label><input type="checkbox" name="intent" value="upgrade40"> I'd upgrade for <span data-cfg="PRICE_SHORTS_UPGRADE">$40</span></label>
+                <label><input type="checkbox" name="intent" value="bundle79"> I'd buy the <span data-cfg="PRICE_SHORTS_BUNDLE">$79</span> bundle</label>
+              </fieldset>
+              <button class="btn btn-ghost" type="submit">Join the Shorts Studio waitlist</button>
+            </form>
+            <p class="small muted">Nothing to pay now. Ticking a box doesn't commit you to anything. We'll send one email when it's ready.</p>
+          </div>
+        </div>
       </div>
+    </div>
     </div>
   </section>
 
@@ -477,6 +523,8 @@ thead th:first-child{background:var(--bg2)}
           <p>English is the main focus and uses Parakeet. Hinglish has its own mode with Roman-script output. Hindi in Devanagari and other Indian languages are coming; we'll say which ones when they're ready.</p></details>
         <details data-if="MONEY_BACK_DAYS"><summary>What if it isn't for me?</summary>
           <p>You're covered by a <span data-cfg="MONEY_BACK_DAYS"></span>-day money-back guarantee. Email us and we'll refund you.</p></details>
+        <details><summary>What is Shorts Studio, and can I buy it now?</summary>
+          <p>Not yet. Shorts Studio is a planned add-on that turns a long video or podcast into ready Shorts on your own computer: it cuts silences and retakes, shortlists 8–15 clips for you to pick from, crops to vertical around whoever is speaking, and keeps your captions in sync. The planned price is $79 once with captions included, or a $40 upgrade for Offline Captions owners. It isn't for sale and nothing ships today. <a href="#shorts-studio">Join the Shorts Studio waitlist</a> and we'll email you once if we build it.</p></details>
       </div>
     </div>
   </section>
@@ -490,9 +538,11 @@ thead th:first-child{background:var(--bg2)}
         <a class="btn" data-checkout href="#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a>
       </div>
       <p class="muted" style="margin-top:24px" id="waitlist">Not ready to pay? Get one email when it launches.</p>
+      <p class="joined" id="joined" role="status">You're on the list. We'll email you once.</p>
       <form class="waitlist" data-waitlist method="POST" action="#waitlist">
         <label class="sr" for="email">Email address</label>
         <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+        <input type="hidden" name="segment" value="launch">
         <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="btn btn-ghost" type="submit">Join the waitlist</button>
       </form>
@@ -533,6 +583,25 @@ thead th:first-child{background:var(--bg2)}
   if (c.CHECKOUT_URL) each("[data-checkout]", function (el) { el.setAttribute("href", c.CHECKOUT_URL); });
   if (c.CHECKOUT_URL_INR) each("[data-checkout-inr]", function (el) { el.setAttribute("href", c.CHECKOUT_URL_INR); });
   if (c.WAITLIST_ACTION) each("[data-waitlist]", function (el) { el.setAttribute("action", c.WAITLIST_ACTION); });
+  // Waitlist forms: submit with fetch when the endpoint is real, show the result inline.
+  each("[data-waitlist]", function (form) {
+    if (!form.querySelector('[name="page"]')) { var pg = document.createElement("input"); pg.type = "hidden"; pg.name = "page"; pg.value = location.pathname; form.appendChild(pg); }
+    form.addEventListener("submit", function (e) {
+      var url = form.getAttribute("action") || "";
+      if (!/^https?:/.test(url) || !window.fetch) return; // plain post fallback
+      e.preventDefault();
+      var btn = form.querySelector("button"), msg = form.querySelector(".wl-msg");
+      if (!msg) { msg = document.createElement("p"); msg.className = "wl-msg"; msg.setAttribute("role", "status"); form.appendChild(msg); }
+      btn.disabled = true; msg.className = "wl-msg"; msg.textContent = "Adding you…";
+      fetch(url, { method: "POST", body: new FormData(form), headers: { accept: "application/json" } })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) {
+          if (x.ok) { msg.textContent = "You're on the list. We'll email you once."; form.querySelector('[type="email"]').value = ""; }
+          else { msg.className = "wl-msg err"; msg.textContent = "That email doesn't look right. Try again?"; btn.disabled = false; }
+        })
+        .catch(function () { msg.className = "wl-msg err"; msg.textContent = "Couldn't reach the server. Please try again."; btn.disabled = false; });
+    });
+  });
   if (c.CONTACT_EMAIL) each("[data-email]", function (el) { el.textContent = c.CONTACT_EMAIL; el.setAttribute("href", "mailto:" + c.CONTACT_EMAIL); });
   if (c.SITE_URL && c.SITE_URL.indexOf("YOUR-DOMAIN") < 0) {
     var u = c.SITE_URL.replace(/\/$/, "") + location.pathname;
