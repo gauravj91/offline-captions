@@ -8,20 +8,20 @@ import path from 'node:path';
 import { probe, extractAudio } from './ffmpeg.mjs';
 import { transcribe } from './transcribe.mjs';
 import { applyDictionary } from './dictionary.mjs';
-import { segment, removeFillers } from './segment.mjs';
-import { resolveStyle } from './styles.mjs';
-import { buildAss } from './ass.mjs';
-import { buildSrt } from './srt.mjs';
+import { buildCaptions } from './captions.mjs';
 import { burn } from './render.mjs';
 import { flagForReview, THRESHOLDS } from './review.mjs';
 
 export { reviewText, reviewStats } from './review.mjs';
+export { buildCaptions } from './captions.mjs';
 
-export { PRESETS } from './styles.mjs';
+export { PRESETS, resolveStyle } from './styles.mjs';
+export { modelPlan, modelStatus, downloadModels, modelsBase } from './models.mjs';
+export { pickEngine } from './transcribe.mjs';
 export { learn, loadDictionary, saveDictionary } from './dictionary.mjs';
 
 /** Transcribes a video into an editable project (plain JSON). */
-export async function createProject(video, { engine, quality = 'balanced', language, dictionary = {}, vocabulary: extraVocabulary = [], onStage } = {}) {
+export async function createProject(video, { engine, quality = 'balanced', language, dictionary = {}, vocabulary: extraVocabulary = [], onStage, onProgress } = {}) {
   onStage?.('probe');
   const meta = await probe(video);
   onStage?.('audio');
@@ -29,7 +29,7 @@ export async function createProject(video, { engine, quality = 'balanced', langu
   onStage?.('transcribe');
   const t0 = Date.now();
   const vocabulary = [...Object.values(dictionary), ...extraVocabulary];
-  const { words, engine: used } = await transcribe(audio, { engine, quality, language, vocabulary });
+  const { words, engine: used } = await transcribe(audio, { engine, quality, language, vocabulary, onProgress });
   return {
     version: 1,
     video: path.resolve(video),
@@ -37,17 +37,6 @@ export async function createProject(video, { engine, quality = 'balanced', langu
     engine: used,
     transcribeSeconds: (Date.now() - t0) / 1000,
     words: flagForReview(applyDictionary(words, dictionary), THRESHOLDS[used]),
-  };
-}
-
-export function buildCaptions(project, { style = 'bold', fillers = true, segmentOpts } = {}) {
-  const st = resolveStyle(style);
-  const words = fillers ? removeFillers(project.words) : project.words;
-  const lines = segment(words, st.mode === 'single' ? { maxWords: 1 } : segmentOpts);
-  return {
-    lines,
-    ass: buildAss(lines, st, { width: project.width, height: project.height }),
-    srt: buildSrt(lines),
   };
 }
 
