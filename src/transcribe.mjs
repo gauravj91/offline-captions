@@ -16,11 +16,11 @@ export function pickEngine({ engine, language } = {}) {
 
 /**
  * @param {Float32Array} audio 16 kHz mono
- * @param {{engine?:'parakeet'|'whisper'|'hinglish', quality?:string, language?:string, vocabulary?:string[]}} opts
+ * @param {{engine?:'parakeet'|'whisper'|'hinglish', quality?:string, language?:string, vocabulary?:string[], onProgress?:(fraction:number)=>void}} opts
  */
 export async function transcribe(audio, opts = {}) {
   const engine = pickEngine(opts);
-  const res = engine === 'parakeet' ? await transcribeParakeet(audio)
+  const res = engine === 'parakeet' ? await transcribeParakeet(audio, opts)
     : engine === 'hinglish' ? await transcribeHinglish(audio, opts)
     : await transcribeWhisper(audio, opts);
   const words = fixVocabulary(res.words, opts.vocabulary || []);
