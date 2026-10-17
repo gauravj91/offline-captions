@@ -87,10 +87,10 @@
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
       .then(function (r) {
         if (r.status === 200 && r.j.key) return setKey(r.j.key);
-        if (n < 20) return setTimeout(function () { pollKey(txn, email, n + 1); }, 1500);
+        if (n < 60) return setTimeout(function () { pollKey(txn, email, n + 1); }, 2000);
         setKey(null, "Payment received. Your key is taking longer than usual and will arrive by email. Order ID: " + txn);
       })
-      .catch(function () { if (n < 20) setTimeout(function () { pollKey(txn, email, n + 1); }, 1500); });
+      .catch(function () { if (n < 60) setTimeout(function () { pollKey(txn, email, n + 1); }, 2000); });
   }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]; }); }
 })();
