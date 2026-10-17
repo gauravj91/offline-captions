@@ -21,17 +21,21 @@ if "KV_ID" not in sec:
     sec["KV_ID"]=ex[0]["id"] if ex else cf("POST",f"/accounts/{ACC}/storage/kv/namespaces",{"title":"offline-captions-licenses"})["result"]["id"]
 json.dump(sec,open(SEC,"w")); os.chmod(SEC,0o600)
 meta={"main_module":"worker.js","compatibility_date":"2026-10-01","bindings":[
- {"type":"kv_namespace","name":"KV","namespace_id":sec["KV_ID"]},
+ {"type":"durable_object_namespace","name":"STORE","class_name":"Store"},
+ {"type":"kv_namespace","name":"LEGACY_KV","namespace_id":sec["KV_ID"]},
  {"type":"plain_text","name":"PADDLE_ENV","text":"sandbox"},
  {"type":"plain_text","name":"DEVICE_LIMIT","text":os.environ.get("DEVICE_LIMIT","2")},
  {"type":"plain_text","name":"ALLOWED_ORIGINS","text":"*"},
  {"type":"plain_text","name":"LICENSE_PUBLIC_KEY","text":sec["LICENSE_PUBLIC_KEY"]}],
- "keep_bindings":["secret_text"]}
+ "keep_bindings":["secret_text"],
+ "migrations":{"new_tag":"v1","new_sqlite_classes":["Store"]} if not sec.get("DO_V1") else None}
+if meta["migrations"] is None: del meta["migrations"]
 B="----ocb7a1"
 body=(f"--{B}\r\nContent-Disposition: form-data; name=\"metadata\"; filename=\"metadata.json\"\r\nContent-Type: application/json\r\n\r\n{json.dumps(meta)}\r\n"
  f"--{B}\r\nContent-Disposition: form-data; name=\"worker.js\"; filename=\"worker.js\"\r\nContent-Type: application/javascript+module\r\n\r\n").encode()+open(SRC,"rb").read()+f"\r\n--{B}--\r\n".encode()
 r=cf("PUT",f"/accounts/{ACC}/workers/scripts/{NAME}",raw=body,ct=f"multipart/form-data; boundary={B}"); print("script",r["success"])
 for n in ["LICENSE_PRIVATE_KEY","PADDLE_WEBHOOK_SECRET"]:
     if sec.get(n): print("secret",n,cf("PUT",f"/accounts/{ACC}/workers/scripts/{NAME}/secrets",{"name":n,"text":sec[n],"type":"secret_text"})["success"])
+sec["DO_V1"]=True; json.dump(sec,open(SEC,"w"))
 print("subdomain",cf("POST",f"/accounts/{ACC}/workers/scripts/{NAME}/subdomain",{"enabled":True,"previews_enabled":False})["success"])
 print("pub",sec["LICENSE_PUBLIC_KEY"])
