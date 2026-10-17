@@ -1,0 +1,53 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import worker, { verifyPaddleSignature } from "../src/worker.js";
+
+const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+const b64u = (b) => Buffer.from(b).toString("base64url");
+const store = new Map();
+const env = {
+  KV: { get: async (k) => store.get(k) ?? null, put: async (k, v) => void store.set(k, v) },
+  PADDLE_WEBHOOK_SECRET: "whsec_test", DEVICE_LIMIT: "2", ALLOWED_ORIGINS: "*", PADDLE_ENV: "test",
+  LICENSE_PRIVATE_KEY: b64u(await crypto.subtle.exportKey("pkcs8", kp.privateKey)),
+  LICENSE_PUBLIC_KEY: b64u(await crypto.subtle.exportKey("raw", kp.publicKey)),
+};
+async function sign(raw, ts = Math.floor(Date.now() / 1000)) {
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.PADDLE_WEBHOOK_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const h = Buffer.from(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(`${ts}:${raw}`))).toString("hex");
+  return `ts=${ts};h1=${h}`;
+}
+async function hook(evt, sigOverride) {
+  const raw = JSON.stringify(evt);
+  return worker.fetch(new Request("https://x/webhooks/paddle", { method: "POST", body: raw, headers: { "paddle-signature": sigOverride ?? await sign(raw) } }), env);
+}
+const post = (p, b) => worker.fetch(new Request("https://x" + p, { method: "POST", body: JSON.stringify(b), headers: { "content-type": "application/json" } }), env);
+
+test("rejects bad and stale signatures", async () => {
+  assert.equal((await hook({ event_id: "e0" }, "ts=1;h1=abc")).status, 401);
+  assert.equal(await verifyPaddleSignature("s", await sign("x", 1), "x"), false);
+});
+
+test("purchase -> key -> activate -> limit -> deactivate -> refund revokes", async () => {
+  await hook({ event_id: "e1", event_type: "customer.created", data: { id: "ctm_1", email: "Buyer@Example.com" } });
+  const r = await hook({ event_id: "e2", event_type: "transaction.completed", data: { id: "txn_1", status: "completed", customer_id: "ctm_1", currency_code: "INR",
+    items: [{ price: { id: "pri_full", custom_data: { tier: "full" } } }], details: { totals: { grand_total: "199900" } }, address: { country_code: "IN" } } });
+  assert.equal(r.status, 200);
+  // duplicate delivery is idempotent
+  assert.equal((await (await hook({ event_id: "e2", event_type: "transaction.completed", data: {} })).json()).duplicate, true);
+  const lic = await (await worker.fetch(new Request("https://x/api/license?txn=txn_1&email=buyer@example.com"), env)).json();
+  assert.match(lic.key, /^OC1\./);
+  assert.equal((await worker.fetch(new Request("https://x/api/license?txn=txn_1&email=evil@x.com"), env)).status, 403);
+  assert.equal((await post("/api/activate", { key: lic.key + "x", device_id: "d1" })).status, 400);
+  const a1 = await (await post("/api/activate", { key: lic.key, device_id: "d1", device_name: "Win PC" })).json();
+  assert.match(a1.activation, /^OCA1\./);
+  assert.equal((await post("/api/activate", { key: lic.key, device_id: "d1" })).status, 200); // re-activate same device ok
+  await post("/api/activate", { key: lic.key, device_id: "d2" });
+  const r3 = await post("/api/activate", { key: lic.key, device_id: "d3" });
+  assert.equal(r3.status, 409);
+  await post("/api/deactivate", { key: lic.key, device_id: "d2" });
+  assert.equal((await post("/api/activate", { key: lic.key, device_id: "d3" })).status, 200);
+  await hook({ event_id: "e3", event_type: "adjustment.created", data: { action: "refund", type: "full", status: "approved", transaction_id: "txn_1" } });
+  const v = await (await post("/api/validate", { key: lic.key, device_id: "d1" })).json();
+  assert.equal(v.status, "revoked"); assert.equal(v.ok, false);
+  assert.equal((await post("/api/activate", { key: lic.key, device_id: "d9" })).status, 403);
+});
