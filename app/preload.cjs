@@ -22,6 +22,10 @@ contextBridge.exposeInMainWorld('captions', {
   buildLines: (project, style, fillers) => ipcRenderer.invoke('captions:build', { project, style, fillers }),
   learn: (before, after) => ipcRenderer.invoke('dict:learn', { before, after }),
   exportVideo: (args) => ipcRenderer.invoke('job:export', args),
+  licenseStatus: () => ipcRenderer.invoke('license:status'),
+  activateLicense: (key) => ipcRenderer.invoke('license:activate', key),
+  deactivateLicense: () => ipcRenderer.invoke('license:deactivate'),
+  onLicenseChanged: on('license:changed'),
   onModelProgress: on('models:progress'),
   onJobProgress: on('job:progress'),
 });
