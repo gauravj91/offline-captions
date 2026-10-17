@@ -19,3 +19,6 @@ Going live: create a live Paddle notification destination + client token + price
 update `LICENSE_PUBLIC_KEY` in `src/license.mjs`, and the PADDLE_* values in `landing/site-config.js`.
 
 Tests: `node --test server/test/`. Deploy: `python3 server/deploy.py`.
+
+## Waitlist
+`POST /waitlist` (form or JSON: email, segment, intent[], page, _gotcha honeypot). Stored in the Durable Object as `wl:<segment>:<email>`, and repeat signups merge their intent. Admin: `GET /waitlist/stats` and `GET /waitlist/export` (CSV) with `Authorization: Bearer $WAITLIST_ADMIN_TOKEN` (or `?token=`).
