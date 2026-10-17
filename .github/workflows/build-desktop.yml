@@ -1,0 +1,70 @@
+# Builds test installers for Mac (Apple Silicon + Intel) and Windows on GitHub's
+# machines and attaches them to a GitHub Release, so nobody needs npm locally.
+# Run it: Actions tab -> "Build desktop app" -> Run workflow (or push a v* tag).
+# NOTE: test builds bundle a GPL ffmpeg (libx264) and are not Apple-notarized.
+name: Build desktop app
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14, plat: darwin, arch: arm64, mr: arm64 }
+          - { os: macos-13, plat: darwin, arch: x64, mr: amd64 }
+          - { os: windows-latest, plat: win32, arch: x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm test
+      - name: Bundle ffmpeg (macOS)
+        if: matrix.plat == 'darwin'
+        run: |
+          d=vendor/ffmpeg/darwin-${{ matrix.arch }}; mkdir -p $d
+          for b in ffmpeg ffprobe; do
+            curl -fsSL -o /tmp/$b.zip https://ffmpeg.martin-riedl.de/redirect/latest/macos/${{ matrix.mr }}/release/$b.zip
+            unzip -o -q /tmp/$b.zip -d $d; chmod +x $d/$b
+          done
+          $d/ffmpeg -hide_banner -filters | grep -q " ass " || { echo "ffmpeg lacks libass"; exit 1; }
+      - name: Bundle ffmpeg (Windows)
+        if: matrix.plat == 'win32'
+        shell: bash
+        run: |
+          d=vendor/ffmpeg/win32-x64; mkdir -p $d
+          curl -fsSL -o /tmp/ff.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
+          unzip -q /tmp/ff.zip -d /tmp/ff; cp /tmp/ff/*/bin/ffmpeg.exe /tmp/ff/*/bin/ffprobe.exe $d/
+          $d/ffmpeg.exe -hide_banner -filters | grep -q " ass " || { echo "ffmpeg lacks libass"; exit 1; }
+      - name: Build (macOS, ad-hoc signed test build)
+        if: matrix.plat == 'darwin'
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never -c.mac.identity=- -c.mac.hardenedRuntime=false
+      - name: Build (Windows, unsigned test build)
+        if: matrix.plat == 'win32'
+        run: npx electron-builder --win nsis --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.plat }}-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+          if-no-files-found: error
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - name: Publish test release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          tag="${GITHUB_REF_NAME}"; case "$tag" in v*) ;; *) tag="test-$(date -u +%Y%m%d-%H%M)";; esac
+          gh release create "$tag" out/* --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Test build $tag" --notes "Unsigned test build. Mac: open the .dmg, drag to Applications, then System Settings > Privacy & Security > Open Anyway. Windows: More info > Run anyway."
