@@ -10,7 +10,7 @@ landing/
   vs/capcut/index.html  SEO comparison page
   vs/submagic/index.html
   site-config.js        THE place to edit names, prices, links and open policies
-  media/                demo clips (H.264, muted, ~1.3 MB each) + poster JPGs
+  media/                demo clips (H.264 + AAC 64k mono audio, ~1.4 MB each; muted by default with a tap-for-sound button) + poster JPGs
   robots.txt  sitemap.xml  llms.txt
 ```
 
@@ -61,7 +61,7 @@ Then submit `sitemap.xml` in Google Search Console and Bing Webmaster Tools.
 | `media/demo-en-{bold,clean,punch,reveal}.mp4`, `demo-en-raw.mp4` (19 s, 540×960) | "Connecting Classrooms to Space: Ham Radio Explainer by NASA Astronaut Nichole Ayers" (jsc2025m000040), NASA Johnson Space Center, via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Connecting_Classrooms_to_Space-_Ham_Radio_Explainer_by_NASA_Astronaut_Nichole_Ayers_(jsc2025m000040).webm). 9:16 crop of 0:54.75–1:14.15, captioned by our engine (Parakeet), no hand edits. | Public domain (US government work). NASA's media guidelines: don't imply endorsement (the footer says so). |
 | `media/demo-hinglish-{bold,reveal}.mp4` (18 s) | "What is a Spoken Tutorial" (Hindi), [Spoken Tutorial Project, IIT Bombay](https://spoken-tutorial.org/watch/Spoken+Tutorial+Technology/What+is+a+Spoken+Tutorial/Hindi/). Reframed to 9:16 on a blurred background, captioned by our Hinglish mode, no hand edits. | CC BY-SA 4.0. Our derived clips are therefore CC BY-SA 4.0 too (stated in the Hinglish footer). |
 
-Clips are muted (no audio track) to stay small. Regenerate with `node src/cli.mjs <clip> --style <s> [--lang hinglish] --out dir`, then `ffmpeg -i in.mp4 -an -vf scale=540:960 -c:v libx264 -preset slow -crf 27 -maxrate 1100k -bufsize 2200k -movflags +faststart out.mp4`.
+Clips carry the original audio (AAC 64k mono, muxed 19 Oct 2026: EN from source 54.80 s, Hinglish from 17.52 s of the Spoken Tutorial webm). The page plays them muted with a tap-for-sound button. Regenerate with `node src/cli.mjs <clip> --style <s> [--lang hinglish] --out dir`, then `ffmpeg -i in.mp4 -an -vf scale=540:960 -c:v libx264 -preset slow -crf 27 -maxrate 1100k -bufsize 2200k -movflags +faststart out.mp4`.
 
 App screenshots: `media/app-review.jpg` and `media/app-style-export.jpg` are from the pre-release desktop UI (`/workspace/work/ui-shots/03-review.png`, `04-style-export.png`, 17 Oct 2026), shown under the demo and labelled pre-release. Replace them when the UI changes.
 
