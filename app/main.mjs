@@ -1,7 +1,7 @@
 // Electron main process. Owns windows, dialogs and the personal dictionary.
 // All heavy work (model download, transcription, ffmpeg export) runs in a
 // utilityProcess (app/worker.mjs) so the UI never freezes.
-import { app, BrowserWindow, dialog, ipcMain, shell, utilityProcess, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell, utilityProcess, Menu, net } from 'electron';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,6 +12,7 @@ import { buildCaptions } from '../src/captions.mjs';
 import { learn, loadDictionary, saveDictionary } from '../src/dictionary.mjs';
 import { toolPaths } from './tools.mjs';
 import { loadLicense, licenseStatus, activate, deactivate, revalidate } from '../src/license.mjs';
+import { parseLink, downloadLink } from '../src/fetch-link.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SHOTS = process.env.CAPTIONS_UI_SHOTS; // dev only: scripted screenshot tour
@@ -71,6 +72,14 @@ function styleFrom({ style = 'bold', size, position } = {}) {
   return resolveStyle(style, o);
 }
 
+// ---------- pasted links (the user's own Drive/Dropbox/OneDrive videos) ----------
+// The only network use besides the model download, and only when the user presses Add.
+// Files land in a temp folder that is wiped on quit (and on the next start, after a crash).
+const linkCache = path.join(os.tmpdir(), 'offline-captions-links');
+const linkDownloads = new Map(); // jobId -> AbortController
+const clearLinkCache = () => { try { fs.rmSync(linkCache, { recursive: true, force: true }); } catch { /* in use */ } };
+const inLinkCache = (p) => typeof p === 'string' && path.resolve(p).startsWith(linkCache + path.sep);
+
 // ---------- IPC ----------
 const send = (channel, payload) => win?.webContents.send(channel, payload);
 
@@ -104,6 +113,33 @@ function registerIpc() {
     if (typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
   });
 
+  ipcMain.handle('link:parse', (_e, text) => {
+    const r = parseLink(text);
+    return r.ok ? { ok: true, service: r.service, label: r.label } : { ok: false, code: r.code, message: r.message };
+  });
+  ipcMain.handle('link:download', async (_e, { jobId, url }) => {
+    const ctl = new AbortController();
+    linkDownloads.set(jobId, ctl);
+    try {
+      const r = await downloadLink(url, linkCache, {
+        fetch: (u, init) => net.fetch(u, init),
+        signal: ctl.signal,
+        onProgress: (p) => send('link:progress', { jobId, ...p }),
+        verify: (file) => call('checkVideo', { file }),
+      });
+      return { ok: true, file: r.file, name: r.name, bytes: r.bytes };
+    } catch (e) {
+      return { ok: false, code: e.code || 'network', error: e.code ? e.message : 'Couldn\'t download that link. Check it and try again.' };
+    } finally {
+      linkDownloads.delete(jobId);
+    }
+  });
+  ipcMain.handle('link:cancel', (_e, jobId) => { linkDownloads.get(jobId)?.abort(); });
+  // A downloaded video the user removed from the queue: delete its temp copy.
+  ipcMain.handle('link:discard', (_e, file) => {
+    if (inLinkCache(file)) fs.rm(path.dirname(file), { recursive: true, force: true }, () => {});
+  });
+
   ipcMain.handle('models:status', (_e, opts) => call('modelStatus', opts));
   ipcMain.handle('models:download', (_e, opts) => call('download', opts, (p) => send('models:progress', p)));
 
@@ -123,7 +159,8 @@ function registerIpc() {
 
   ipcMain.handle('job:export', (_e, { jobId, project, outDir, style, fillers, draft }) => {
     if (LICENSE_REQUIRED && !license.licensed) throw new Error('LICENSE_REQUIRED');
-    const dir = outDir || path.dirname(project.video);
+    // Videos from a pasted link live in a temp folder: export those to Downloads by default.
+    const dir = outDir || (inLinkCache(project.video) ? app.getPath('downloads') : path.dirname(project.video));
     const base = path.basename(project.video).replace(/\.[^.]+$/, '');
     const output = path.join(dir, `${base}.captioned.mp4`);
     return call('export', { project, output, opts: { style: styleFrom(style), fillers, quality: draft ? 'draft' : 'high' } },
@@ -150,6 +187,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  clearLinkCache(); // leftovers from a crash
   dictionary = loadDictionary(dictFile());
   license = licenseStatus(loadLicense(licenseFile()));
   revalidate(licenseFile()).then((s) => { license = s; send('license:changed', license); }).catch(() => {});
@@ -161,4 +199,8 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', () => worker?.kill());
+app.on('before-quit', () => {
+  for (const c of linkDownloads.values()) c.abort();
+  worker?.kill();
+});
+app.on('will-quit', clearLinkCache);
