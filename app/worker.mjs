@@ -2,6 +2,7 @@
 // (sherpa-onnx native module / ONNX Runtime) and ffmpeg export off the UI thread.
 // Protocol: { id, type, args } in; { id, progress } updates; { id, ok, result|error } out.
 import { createProject, exportVideo, modelStatus, downloadModels, reviewStats } from '../src/index.mjs';
+import { hasVideoStream } from '../src/ffmpeg.mjs';
 
 const port = process.parentPort;
 const reply = (id, body) => port.postMessage({ id, ...body });
@@ -23,6 +24,10 @@ const handlers = {
     });
     project.language = opts.language || null;
     return { project, stats: reviewStats(project.words) };
+  },
+  // Pasted-link downloads: is the file really a video? null = ffprobe missing, can't tell.
+  checkVideo: async ({ file }) => {
+    try { return await hasVideoStream(file); } catch { return null; }
   },
   export: async ({ project, output, opts }, progress) => {
     progress({ stage: 'export', fraction: 0 });
