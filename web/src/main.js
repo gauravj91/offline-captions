@@ -30,7 +30,7 @@ window.__timings = state.timings; // read by the headless test
 const fmtTime = (s) => { s = Math.max(0, s || 0); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
 const fmtMB = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(2)} GB` : b >= 1e7 ? `${Math.round(b / 1e6)} MB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
 const sizeLabel = (mb) => (mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb} MB`);
-const realLink = (u) => (typeof u === 'string' && /^https:\/\//.test(u) && !/YOUR-DOMAIN|example/.test(u) ? u : '');
+const realLink = (u) => (typeof u === 'string' && /^https:\/\//.test(u) && !/YOUR-DOMAIN\.example/.test(u) ? u : '');
 const upsellUrl = () => realLink(CFG.UPSELL_URL) || realLink(SITE.CHECKOUT_URL) || realLink(SITE.SITE_URL);
 const endSec = () => Math.min(state.meta?.duration || 0, CFG.MAX_SECONDS);
 const baseName = (n) => n.replace(/\.[^.]+$/, '');
