@@ -5,8 +5,30 @@
    which we show here right after payment (and which is emailed too, once email is wired up). */
 (function () {
   var c = window.SITE_CONFIG || {};
-  if (!c.PADDLE_CLIENT_TOKEN || !c.PADDLE_PRICE_ID) return;
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  if (!c.SALES_OPEN) { prelaunch(); return; }
+  if (!c.PADDLE_CLIENT_TOKEN || !c.PADDLE_PRICE_ID) return;
+
+  // Before sales open: every Pre-order button sends people to the launch waitlist,
+  // and the free web app is offered next to it. Flip SALES_OPEN to undo all of this.
+  function prelaunch() {
+    var form = document.querySelector("#checkout [data-waitlist]"), onHome = !!form;
+    each("[data-checkout],[data-checkout-inr]", function (el) {
+      var small = el.classList.contains("btn-sm");
+      el.textContent = small ? "Get launch price" : "Get the launch price";
+      el.setAttribute("href", onHome ? "#checkout" : "/#waitlist");
+      if (onHome) el.addEventListener("click", function (e) {
+        e.preventDefault();
+        form.scrollIntoView({ behavior: "smooth", block: "center" });
+        var i = form.querySelector('[type="email"]'); if (i) setTimeout(function () { i.focus({ preventScroll: true }); }, 400);
+      });
+    });
+    var w = document.getElementById("waitlist");
+    if (w) w.innerHTML = "Launching soon. Join the list to lock in the founding price of <strong>" + (c.PRICE_PREORDER || "$29") + "</strong>. We'll send one email when it's ready." +
+      (c.WEB_APP_URL ? ' Want to try it now? <a href="' + c.WEB_APP_URL + '">Use the free web version</a>.' : "");
+    if (form) { var b = form.querySelector("button"); if (b) b.textContent = "Notify me at launch"; }
+    each("[data-prelaunch-hide]", function (el) { el.style.display = "none"; });
+  }
 
   var s = document.createElement("script");
   s.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
