@@ -13,7 +13,7 @@ window.SITE_CONFIG = {
   /* Sales switch. false = Pre-order buttons become "Get the launch price" and point to the
      launch waitlist, and Paddle isn't loaded. Set true only once PADDLE_ENV is "production". */
   SALES_OPEN: false,
-  WEB_APP_URL: "https://offline-captions-web.vercel.app",
+  WEB_APP_URL: "https://app.offlinecaptions.com",
 
   /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
