@@ -58,12 +58,66 @@ function addFiles(paths) {
   }
   renderQueues();
   updateStart();
+  autoRun();
+}
+// On the review screen new videos start on their own (the model is already there).
+function autoRun() {
   if (state.running === false && $('#screen-review').hidden === false && state.jobs.some((j) => j.status === 'queued')) runQueue();
+}
+
+// ---------------- paste a link (the user's own Drive/Dropbox/OneDrive videos) ----------------
+// The download runs in the main process; the queue row shows progress, then the
+// file is queued like a dropped one. YouTube/social links are refused there.
+function linkNote(text, kind) {
+  const n = $('#link-note');
+  n.hidden = !text;
+  n.textContent = text || '';
+  n.className = `link-note${kind === 'err' ? ' err' : ''}`;
+}
+
+async function addLink(text) {
+  text = String(text || '').trim();
+  if (!text) { linkNote(''); return; }
+  const r = await api.parseLink(text);
+  if (!r.ok) { linkNote(r.message, r.code === 'blocked' ? 'info' : 'err'); return; }
+  if (state.jobs.some((j) => j.link === text && j.status !== 'error')) { linkNote('That link is already in the queue.'); return; }
+  linkNote('');
+  $('#link-input').value = '';
+  const j = { id: ++seq, file: null, link: text, from: r.label, name: `Video from ${r.label}`, status: 'downloading', progress: 0, received: 0, total: 0, stage: null };
+  state.jobs.push(j);
+  renderQueues(); updateStart();
+  const res = await api.downloadLink(j.id, text);
+  if (!state.jobs.includes(j)) { if (res.ok) api.discardLink(res.file); return; } // removed while downloading
+  if (res.ok) {
+    Object.assign(j, { file: res.file, name: res.name, bytes: res.bytes, status: 'queued', progress: 0 });
+  } else if (res.code === 'cancelled') {
+    state.jobs = state.jobs.filter((x) => x !== j);
+  } else {
+    Object.assign(j, { status: 'error', error: res.error });
+  }
+  renderQueues(); updateStart();
+  autoRun();
+}
+
+api.onLinkProgress((p) => {
+  const j = job(p.jobId);
+  if (!j || j.status !== 'downloading') return;
+  j.received = p.received; j.total = p.total;
+  j.progress = p.total ? Math.min(1, p.received / p.total) : null;
+  renderQueues();
+});
+
+function removeJob(j) {
+  if (j.status === 'downloading') api.cancelLink(j.id);
+  else if (j.link && j.file) api.discardLink(j.file);
+  state.jobs = state.jobs.filter((x) => x.id !== j.id);
+  renderQueues(); updateStart();
 }
 
 function renderQueues() {
   const statusPill = (j) => {
     const map = {
+      downloading: [j.progress ? `Downloading ${Math.round(j.progress * 100)}%` : 'Downloading', 'warn'],
       queued: ['Waiting', ''], transcribing: [stageLabel(j), 'warn'], ready: [j.stats?.flagged ? `${j.stats.flagged} to check` : 'Ready', j.stats?.flagged ? 'warn' : 'ok'],
       exporting: ['Exporting', 'warn'], done: ['Exported', 'ok'], error: ['Failed', 'err'],
     };
@@ -72,17 +126,20 @@ function renderQueues() {
   };
   const meta = (j) => {
     if (j.status === 'error') return j.error;
-    if (j.project) return `${fmtTime(j.project.duration)} · ${j.project.width}×${j.project.height} · ${j.project.engine}`;
+    if (j.project) return `${fmtTime(j.project.duration)} · ${j.project.width}×${j.project.height}`;
+    if (j.status === 'downloading') return j.received ? `${fmtMB(j.received)}${j.total ? ` of ${fmtMB(j.total)}` : ''} · from ${j.from}` : `Connecting to ${j.from}…`;
+    if (j.link) return `From ${j.from}${j.bytes ? ` · ${fmtMB(j.bytes)}` : ''}`;
     return dirName(j.file);
   };
   const item = (j, compact) => {
-    const busy = j.status === 'transcribing' || j.status === 'exporting';
+    const busy = j.status === 'transcribing' || j.status === 'exporting' || j.status === 'downloading';
+    const removable = !compact && ((!state.running && j.status === 'queued') || j.status === 'downloading' || (j.link && j.status === 'error'));
     const el = document.createElement('div');
     el.className = `qi${compact && j.id === state.current ? ' sel' : ''}`;
     el.dataset.id = j.id;
     el.innerHTML = `<div class="thumb">▶</div>
       <div class="info"><div class="name"></div><div class="meta"></div>${busy ? '<div class="bar"><i></i></div>' : ''}</div>
-      <div class="right">${statusPill(j)}${!compact && !state.running && j.status === 'queued' ? '<button class="x" title="Remove">×</button>' : ''}</div>`;
+      <div class="right">${statusPill(j)}${removable ? `<button class="x" title="${j.status === 'downloading' ? 'Cancel download' : 'Remove'}">×</button>` : ''}</div>`;
     el.querySelector('.name').textContent = j.name;
     el.querySelector('.meta').textContent = meta(j);
     if (busy) {
@@ -91,12 +148,13 @@ function renderQueues() {
     }
     el.querySelector('.x')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      state.jobs = state.jobs.filter((x) => x.id !== j.id);
-      renderQueues(); updateStart();
+      removeJob(j);
     });
     if (compact) el.addEventListener('click', () => { if (j.project) openJob(j.id); });
     return el;
   };
+  // Linked videos sit in a temp folder, so by default they export to Downloads (app/main.mjs).
+  if (!state.outDir) $('#out-dir').textContent = state.jobs.some((j) => j.link) ? 'same folder as each video (Downloads for links)' : 'same folder as each video';
   $('#queue-import').replaceChildren(...state.jobs.map((j) => item(j, false)));
   $('#queue-side').replaceChildren(...state.jobs.map((j) => item(j, true)));
 }
@@ -164,7 +222,7 @@ async function ensureModel() {
 api.onModelProgress((p) => {
   const pct = p.total ? Math.min(1, p.received / p.total) : 0;
   $('#dl-bar').style.width = `${(pct * 100).toFixed(1)}%`;
-  $('#dl-text').textContent = p.file ? `${fmtMB(p.received)} of ${fmtMB(p.total)} · ${p.file}` : 'Finishing…';
+  $('#dl-text').textContent = p.file ? `${fmtMB(p.received)} of ${fmtMB(p.total)}` : 'Finishing…';
   $('#dl-pct').textContent = `${Math.round(pct * 100)}%`;
 });
 
@@ -545,8 +603,13 @@ const dz = $('#dropzone');
 ['dragleave', 'drop'].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); if (ev === 'drop' || e.target === dz) dz.classList.remove('over'); }));
 document.addEventListener('drop', (e) => {
   const paths = [...(e.dataTransfer?.files || [])].map((f) => api.pathForFile(f)).filter(Boolean);
-  if (paths.length) addFiles(paths);
+  if (paths.length) return addFiles(paths);
+  // A link dragged from the browser: treat it like a pasted one.
+  const url = (e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text/plain') || '').split(/\r?\n/).find((l) => l && !l.startsWith('#'));
+  if (url && $('#screen-review').hidden) { $('#link-input').value = url.trim(); addLink(url); }
 });
+$('#link-form').addEventListener('submit', (e) => { e.preventDefault(); addLink($('#link-input').value); });
+$('#link-input').addEventListener('input', () => linkNote(''));
 $('#btn-pick').addEventListener('click', async () => addFiles(await api.pickVideos()));
 $('#btn-start').addEventListener('click', start);
 $('#btn-back').addEventListener('click', () => { video.pause(); showScreen('import'); refreshModel(); });
@@ -613,5 +676,5 @@ $('#lic-deactivate').addEventListener('click', async () => {
   syncStyle();
   renderQueues();
   await refreshModel();
-  window.__ui = { state, addFiles, openJob, editWord, commitEdit, nextFlag, seek, exportJobs, start, showScreen, video };
+  window.__ui = { state, addFiles, addLink, openJob, editWord, commitEdit, nextFlag, seek, exportJobs, start, showScreen, video };
 })();
