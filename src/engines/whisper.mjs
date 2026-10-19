@@ -114,12 +114,78 @@ export async function transcribeWhisper(audio, { quality = 'fast', language, voc
       }))
       .filter((w) => w.text);
     if (prompt) words = stripPrompt(words, prompt);
+    if (timingBroken(words.map((w) => ({ ...w, start: w.start - off, end: w.end - off })), (b - a) / SR)) {
+      const seg = await asr(audio.subarray(a, b), { ...base, return_timestamps: true });
+      words = spreadOverSegments(words, seg.chunks, off);
+    }
+    clampLong(words);
     const tokens = rec.steps.filter((t) => t.id < eot)
       .map((t) => ({ text: tk.decode([t.id], { skip_special_tokens: true }), p: t.p }));
     all.push(...alignConfidence(words, tokens));
     onProgress?.(b / audio.length);
   }
   return { text: all.map((w) => w.text).join(' '), words: fixTimes(all) };
+}
+
+/**
+ * Whisper's word timestamps (cross-attention DTW) sometimes collapse: when a window
+ * holds a few seconds of speech followed by crowd noise or music, whisper-base puts
+ * every word at the very end of the padded 30 s window. The words are right, the
+ * times are not, so captions show up 20+ seconds late. Detect that here.
+ */
+export function timingBroken(words, winSec) {
+  if (words.length < 3) return words.some((w) => w.end > winSec + 0.5);
+  const late = words.filter((w) => w.start > winSec + 0.5).length;
+  const flat = words.filter((w) => w.end - w.start < 0.02).length;
+  return late / words.length > 0.3 || flat / words.length > 0.6;
+}
+
+const isSound = (t) => /^\s*[\[(][^\])]*[\])]\s*$/.test(t); // "[Cheering]", "(music)"
+
+/**
+ * Re-times words from a broken word pass using the segment pass (which stays
+ * reliable): each word gets a share of its segment by length. Times are relative
+ * to the window; `off` is the window start in seconds.
+ */
+export function spreadOverSegments(words, segments, off) {
+  const segs = (segments || [])
+    .map((c) => ({ text: String(c.text || ''), start: Number(c.timestamp?.[0]), end: Number(c.timestamp?.[1]) }))
+    .filter((c) => !isSound(c.text) && Number.isFinite(c.start))
+    .map((c) => ({ ...c, end: Number.isFinite(c.end) && c.end > c.start ? c.end : c.start + 2, n: c.text.trim().split(/\s+/).filter(Boolean).length }));
+  if (!segs.length || !words.length) return words;
+  const weight = (w) => w.text.length + 1;
+  const total = segs.reduce((n, c) => n + c.n, 0);
+  let groups;
+  if (total === words.length) { // same decode: words map onto segments one to one
+    let i = 0; groups = segs.map((c) => { const g = words.slice(i, i + c.n); i += c.n; return [c, g]; });
+  } else { // different decode: split words across segments by speaking time
+    const dur = segs.reduce((n, c) => n + (c.end - c.start), 0);
+    const W = words.reduce((n, w) => n + weight(w), 0);
+    let i = 0, acc = 0, need = 0; groups = [];
+    for (const c of segs) {
+      need += ((c.end - c.start) / dur) * W;
+      const g = [];
+      while (i < words.length && (acc + weight(words[i]) / 2 <= need || c === segs[segs.length - 1])) { acc += weight(words[i]); g.push(words[i++]); }
+      groups.push([c, g]);
+    }
+  }
+  for (const [c, g] of groups) {
+    const W = g.reduce((n, w) => n + weight(w), 0) || 1;
+    let t = c.start;
+    for (const w of g) {
+      const d = ((c.end - c.start) * weight(w)) / W;
+      w.start = off + t; w.end = off + t + d; w.timing = 'estimated'; t += d;
+    }
+  }
+  return words;
+}
+
+/** A word stretched over a long pause (e.g. 0-9.6 s across applause) is pulled to just before its end. */
+export function clampLong(words, maxDur = 2) {
+  for (const w of words) {
+    if (w.end - w.start > maxDur) w.start = w.end - Math.min(1, 0.1 + 0.07 * w.text.length);
+  }
+  return words;
 }
 
 /** Keeps timestamps monotonic and gives every word a minimum visible length. */
