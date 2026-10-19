@@ -118,26 +118,19 @@ function updateStart() {
 }
 
 const LANG_HINT = {
-  en: 'English uses NVIDIA Parakeet, our most accurate model.',
+  en: 'Our most accurate English engine. Runs fully offline.',
   hinglish: 'Roman-script Hinglish ("kya scene hai, bro"). Unsure words are flagged for review.',
-  other: 'Uses Whisper. Pick the language spoken in the video.',
+  other: 'Pick the language spoken in the video.',
 };
-function qualityHint() {
-  if (state.lang === 'en') return 'Parakeet runs the same model at every setting: fast and accurate.';
-  if (state.lang === 'hinglish') return state.quality === 'accurate' ? 'Apex: best Hinglish, ~1.2 GB, slower.' : 'Swift: quick and light, ~350 MB.';
-  return { fast: 'Whisper base: quickest, ~80 MB.', balanced: 'Whisper small: good balance, ~250 MB.', accurate: 'Whisper large-v3-turbo: best, ~800 MB.' }[state.quality];
-}
 
 async function refreshModel() {
   $('#lang-hint').textContent = LANG_HINT[state.lang];
-  $('#quality-hint').textContent = qualityHint();
-  $('#seg-quality').classList.toggle('disabled', state.lang === 'en');
   $('#sel-other').hidden = state.lang !== 'other';
   try {
     state.model = await api.modelStatus(langOpts());
   } catch (e) { state.model = null; }
   const m = state.model;
-  $('#model-name').textContent = m ? m.label : 'Speech model';
+  $('#model-name').textContent = { en: 'English speech pack', hinglish: 'Hinglish speech pack', other: 'Speech pack' }[state.lang];
   $('#model-sub').textContent = !m ? 'Could not check the model folder.'
     : m.ready ? 'Ready. Transcription runs fully offline.'
     : `One-time download, about ${sizeLabel(m.approxMB)}.${m.managed ? ' Downloaded before the first transcription.' : ''}`;
@@ -183,14 +176,14 @@ async function start() {
 async function runQueue() {
   if (state.running) return;
   state.running = true; updateStart();
-  const opts = langOpts();
   for (let j; (j = state.jobs.find((x) => x.status === 'queued'));) {
+    const opts = j.opts || langOpts();
     j.status = 'transcribing'; j.stage = 'probe'; j.progress = null;
     renderQueues(); updateBusy();
     try {
       const { project, stats } = await api.transcribe(j.id, j.file, opts);
       Object.assign(j, { project, stats, status: 'ready', progress: 1 });
-      if (!state.current) openJob(j.id);
+      if (!state.current || (j.deeper && state.current === j.id)) openJob(j.id);
     } catch (e) {
       Object.assign(j, { status: 'error', error: cleanErr(e) });
     }
@@ -306,9 +299,29 @@ function updateReviewNote() {
   j.stats = { flagged, total: ws.length };
   $('#flag-count').textContent = flagged;
   $('#btn-next-flag').disabled = !flagged;
-  $('#review-note').innerHTML = flagged
-    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: the model was unsure. Click a word to hear it and fix it; press Enter to keep it.`
-    : `All ${ws.length} words look good. Click any word to jump there or edit it.`;
+  const q = (j.opts || langOpts()).quality;
+  const deeper = flagged && state.lang !== 'en' && q !== 'accurate' && !state.running && !ws.some((w) => w.edited)
+    && flagged / ws.length > DEEPER_PASS_RATIO;
+  $('#review-note').innerHTML = (flagged
+    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: unsure words. Click a word to hear it and fix it; press Enter to keep it.`
+    : `All ${ws.length} words look good. Click any word to jump there or edit it.`)
+    + (deeper ? ' <button class="link" id="btn-deeper">Hard audio? Run a deeper pass</button>' : '');
+  if (deeper) $('#btn-deeper').addEventListener('click', () => deeperPass(j));
+}
+
+// Quality is picked for the user. If many words come back unsure, we offer one
+// deeper (slower, bigger model) pass instead of asking them to choose up front.
+const DEEPER_PASS_RATIO = 0.08;
+async function deeperPass(j) {
+  const opts = { ...langOpts(), quality: 'accurate' };
+  $('#review-note').textContent = 'Getting the deeper speech pack ready…';
+  try {
+    const st = await api.modelStatus(opts);
+    if (!st.ready) await api.downloadModels(opts);
+  } catch (e) { $('#review-note').textContent = cleanErr(e); return; }
+  Object.assign(j, { opts, deeper: true, status: 'queued' });
+  renderQueues();
+  runQueue();
 }
 
 let nowIdx = -1;
@@ -547,7 +560,6 @@ function segWire(id, key) {
   }));
 }
 segWire('#seg-lang', 'lang');
-segWire('#seg-quality', 'quality');
 $('#sel-other').addEventListener('change', (e) => { state.otherLang = e.target.value; refreshModel(); });
 
 // about
