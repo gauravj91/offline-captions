@@ -30,7 +30,7 @@ export async function tour(win, dir) {
   if (process.env.CAPTIONS_UI_TOUR === 'download') { // first-run download only (Hinglish Apex: largest)
     await js(`document.querySelector('#seg-lang [data-v=hinglish]').click()`);
     await sleep(200);
-    await js(`document.querySelector('#seg-quality [data-v=accurate]').click()`);
+    // quality picker removed 19 Oct 2026 (auto + deeper-pass offer)
     await sleep(400);
     await js('window.__ui.start()');
     await waitFor("parseInt(document.querySelector('#dl-pct').textContent) >= 8", 90000);
