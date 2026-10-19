@@ -91,7 +91,7 @@ Security defaults: `contextIsolation: true`, `nodeIntegration: false`, `sandbox:
 
 ## Web version (free trial, `web/`)
 
-A static browser version used as the top of the funnel: one clip up to 60 s, Whisper (transformers.js) in a Web Worker, the same review UX, live canvas preview of the 4 styles, SRT + burned-in 1080p MP4 via WebCodecs. The video never leaves the browser. Limits live in `web/config.js`. Live: https://offline-captions-web.vercel.app. See `web/README.md` (build, deploy, timings, sherpa-onnx/Parakeet-in-browser findings).
+A static browser version used as the top of the funnel: one clip up to 60 s, Whisper (transformers.js) in a Web Worker, the same review UX, live canvas preview of the 4 styles, SRT + burned-in 1080p MP4 via WebCodecs. The video never leaves the browser. Limits live in `web/config.js`. Live: https://app.offlinecaptions.com. See `web/README.md` (build, deploy, timings, sherpa-onnx/Parakeet-in-browser findings).
 
 ## How it works
 
