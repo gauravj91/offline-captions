@@ -20,7 +20,7 @@ let win;
 // Paid desktop app: exporting needs an activated license (the free trial is the web app).
 // CAPTIONS_NO_LICENSE=1 skips the check for development and screenshots.
 const LICENSE_REQUIRED = !process.env.CAPTIONS_NO_LICENSE && !SHOTS;
-export const BUY_URL = process.env.CAPTIONS_BUY_URL || 'https://offline-captions-site.vercel.app/#checkout';
+export const BUY_URL = process.env.CAPTIONS_BUY_URL || 'https://offlinecaptions.com/#checkout';
 const licenseFile = () => path.join(app.getPath('userData'), 'license.json');
 let license = { licensed: false, reason: 'none' };
 
