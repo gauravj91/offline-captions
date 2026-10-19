@@ -64,6 +64,8 @@ header.nav .wrap{display:flex;align-items:center;justify-content:space-between;h
 @media (max-width:860px){.hero-grid{grid-template-columns:1fr;gap:40px}}
 .phone{position:relative;width:min(290px,78vw);aspect-ratio:9/16;border-radius:36px;background:#000;border:9px solid #1d1d22;box-shadow:0 0 0 1px #2c2c33,0 40px 80px rgba(0,0,0,.6);overflow:hidden;margin:0 auto}
 .phone video,.phone img{width:100%;height:100%;object-fit:cover}
+.phone .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2;backdrop-filter:blur(4px)}
+.phone .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}
 .phone .tag{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;letter-spacing:.05em;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
 .card p:last-child{margin-bottom:0}
@@ -307,6 +309,21 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
   } else {
     Array.prototype.forEach.call(lazy, function (v) { v.src = v.getAttribute("data-lazy"); });
   }
+  // Sound toggle on demo videos: muted by default (autoplay rules), tap to hear it.
+  each(".phone video", function (v) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "snd"; b.setAttribute("aria-pressed", "false");
+    var set = function () { var on = !v.muted; b.setAttribute("aria-pressed", on ? "true" : "false"); b.setAttribute("aria-label", on ? "Mute video" : "Unmute video"); b.innerHTML = on ? "&#128266; Sound on" : "&#128264; Tap for sound"; };
+    b.addEventListener("click", function () {
+      var turnOn = v.muted;
+      if (turnOn) each(".phone video", function (o) { if (o !== v && !o.muted) { o.muted = true; o.dispatchEvent(new Event("volumechange")); } });
+      v.muted = !turnOn;
+      if (turnOn) { if (!v.src && v.getAttribute("data-lazy")) v.src = v.getAttribute("data-lazy"); v.currentTime = 0; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+      set();
+    });
+    v.addEventListener("volumechange", set);
+    set(); v.parentNode.appendChild(b);
+  });
 })();</script>
 </body>
 </html>
