@@ -47,7 +47,12 @@ function setupUpsell() {
   $('#desk-price-note').textContent = CFG.PRICE_NOTE;
   const url = upsellUrl();
   const cta = $('#desk-cta');
-  if (url) { cta.href = url; cta.textContent = `Get the desktop app · ${CFG.PRICE}`; }
+  if (url && !SITE.SALES_OPEN && realLink(SITE.SITE_URL)) {
+    // Before sales open: send people to the launch list on the main site.
+    cta.href = SITE.SITE_URL.replace(/\/$/, '') + '/#checkout';
+    cta.textContent = `Get the launch price · ${CFG.PRICE}`;
+    $('#desk-price-note').textContent = 'founding price, one-time · launching soon';
+  } else if (url) { cta.href = url; cta.textContent = `Get the desktop app · ${CFG.PRICE}`; }
   else { cta.removeAttribute('href'); cta.classList.add('disabled'); cta.textContent = 'Pre-orders open soon'; }
 }
 function showDesktop(reason) {
