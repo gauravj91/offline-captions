@@ -167,7 +167,12 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 
 .next-video{max-width:280px;margin:18px auto 22px;text-align:center}
 .next-video video{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);background:#000;display:block}
-.next-video figcaption{margin-top:8px}</style>
+.next-video figcaption{margin-top:8px}
+
+.walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
+.walk video{display:block;width:100%;height:auto}
+.walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
 
 <script type="application/ld+json">
 {
@@ -228,7 +233,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         {"@type": "Question", "name": "Do my videos get uploaded anywhere?",
          "acceptedAnswer": {"@type": "Answer", "text": "No. Transcription and rendering happen on your computer. Your video and audio never leave your machine, and the app works offline once it and its speech model are installed."}},
         {"@type": "Question", "name": "How accurate are the captions?",
-         "acceptedAnswer": {"@type": "Answer", "text": "English uses NVIDIA's Parakeet speech model. On our own 28-clip benchmark it had a 7.6% word error rate, versus 9.6% for Whisper-small. We have not finished a head-to-head test against CapCut or Submagic, so we don't claim to beat them. Words the model is unsure of are highlighted in yellow and a personal dictionary remembers your names and brand words."}},
+         "acceptedAnswer": {"@type": "Answer", "text": "On our own 28-clip benchmark of noisy, accented English, the English engine had a 7.6% word error rate, versus 9.6% for the widely used open alternative. We have not finished a head-to-head test against CapCut or Submagic, so we don't claim to beat them. Words the model is unsure of are highlighted in yellow and a personal dictionary remembers your names and brand words."}},
         {"@type": "Question", "name": "Which computers does it run on?",
          "acceptedAnswer": {"@type": "Answer", "text": "Mac and Windows. Exact minimum specs will be published before launch. Transcription runs on your own hardware, so newer computers finish faster."}},
         {"@type": "Question", "name": "Can I get an SRT subtitle file as well as the video?",
@@ -290,12 +295,24 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     </div>
   </section>
 
+  <!-- WALKTHROUGH -->
+  <section id="walkthrough" aria-labelledby="walk-h">
+    <div class="wrap">
+      <span class="eyebrow">See it work</span>
+      <h2 id="walk-h">From a plain video to captions in three steps</h2>
+      <p class="lede">A real recording of the app: drop in a video with no subtitles, the captions are made on your computer, then export it ready to post. Tap for sound to check the words land on the lips.</p>
+      <div class="walk">
+        <video muted loop playsinline preload="none" poster="media/walkthrough.jpg" width="1280" height="720" data-lazy="media/walkthrough.mp4" aria-label="Walkthrough: a video with no subtitles is added, captions are generated offline, and the captioned export plays"></video>
+      </div>
+    </div>
+  </section>
+
   <!-- DEMO -->
   <section id="demo" aria-labelledby="demo-h">
     <div class="wrap">
       <span class="eyebrow">Demo</span>
       <h2 id="demo-h">Same clip, four styles. Untouched engine output.</h2>
-      <p class="lede">These clips came straight out of our caption engine with no hand edits: a 19-second public-domain NASA clip, transcribed offline and rendered in each style. Switch styles to see the difference.</p>
+      <p class="lede">These clips came straight out of our caption engine with no hand edits: a 17-second public-domain NASA clip, transcribed offline and rendered in each style. Switch styles to see the difference.</p>
       <div class="demo-grid">
         <div class="phone">
           <video id="demo-video" muted loop playsinline preload="none" poster="media/demo-en-reveal.jpg" width="540" height="960" data-lazy="media/demo-en-reveal.mp4" aria-label="Caption style demo"></video>
@@ -310,7 +327,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
           </div>
           <p id="demo-desc" class="muted" aria-live="polite">Reveal: words appear as they're spoken, with a green highlight.</p>
           <div class="transcript">
-            <p style="margin:0 0 8px"><strong style="color:var(--text)">What the engine heard</strong> (English, NVIDIA Parakeet, offline):</p>
+            <p style="margin:0 0 8px"><strong style="color:var(--text)">What the engine heard</strong> (English, offline):</p>
             <p style="margin:0">"We talk to each other by establishing a radio link between the ISS and your school as we fly over your location. We won't have a lot of time to talk because we'll be cruising over the ground station at 17,500 miles an hour. That's 25 times the speed of sound. So we'll actually only have about <span class="unsure">nine</span> <span class="unsure">or</span> <span class="unsure">ten</span> minutes of good radio contact from the horizon to the horizon."</p>
           </div>
           <p class="small muted" style="margin-top:12px">The three yellow words are ones the model flagged as unsure. They were right this time; the app asks you to glance at them instead of proofreading everything. Clips are muted here.</p>
@@ -388,7 +405,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         <article class="card"><span class="pill">Educators</span><h3>Course and tutorial videos</h3><p class="muted">Burn captions into the promo Shorts and keep the .srt for the full lessons on your course platform or YouTube.</p></article>
         <article class="card"><span class="pill">Client work</span><h3>Footage that can't be uploaded</h3><p class="muted">Unreleased product launches, NDA client footage, clinic or therapy promos: transcription never leaves your machine.</p></article>
         <article class="card"><span class="pill">Hinglish</span><h3>Hindi-English creators</h3><p class="muted">"Usko gaali de do, complaint kar lo" comes out in Roman script, timed word by word, ready for Reels. <a href="hinglish/">Hinglish page</a></p></article>
-        <article class="card"><span class="pill">Two-language channels</span><h3>English one day, Hinglish the next</h3><p class="muted">The same four styles for both: English runs on Parakeet, Hinglish on its own mode. Hindi in Devanagari and more Indian languages are coming.</p></article>
+        <article class="card"><span class="pill">Two-language channels</span><h3>English one day, Hinglish the next</h3><p class="muted">The same four styles for both: English and Hinglish each have their own engine. Hindi in Devanagari and more Indian languages are coming.</p></article>
       </div>
     </div>
   </section>
@@ -522,7 +539,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         <details><summary>Do my videos get uploaded anywhere?</summary>
           <p>No. Transcription and rendering happen on your computer. Your video and audio never leave your machine, and the app works offline once it and its speech model are installed.</p></details>
         <details><summary>How accurate are the captions?</summary>
-          <p>English uses NVIDIA's Parakeet speech model. On our own 28-clip benchmark it had a 7.6% word error rate, versus 9.6% for Whisper-small. We have not finished a head-to-head test against CapCut or Submagic, so we don't claim to beat them. Words the model is unsure of are highlighted in yellow and a personal dictionary remembers your names and brand words.</p></details>
+          <p>On our own 28-clip benchmark of noisy, accented English, the English engine had a 7.6% word error rate, versus 9.6% for the widely used open alternative. We have not finished a head-to-head test against CapCut or Submagic, so we don't claim to beat them. Words the model is unsure of are highlighted in yellow and a personal dictionary remembers your names and brand words.</p></details>
         <details><summary>Which computers does it run on?</summary>
           <p>Mac and Windows. Exact minimum specs will be published before launch. Transcription runs on your own hardware, so newer computers finish faster.</p></details>
         <details><summary>Can I get an SRT subtitle file as well as the video?</summary>
@@ -530,7 +547,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         <details><summary>Can it caption a batch of videos at once?</summary>
           <p>Yes. Drop in a folder of clips, pick your style, and it captions them one after another while you do something else. There is no per-video charge.</p></details>
         <details><summary>Which languages does it support?</summary>
-          <p>English is the main focus and uses Parakeet. Hinglish has its own mode with Roman-script output. Hindi in Devanagari and other Indian languages are coming; we'll say which ones when they're ready.</p></details>
+          <p>English is the main focus. Hinglish has its own mode with Roman-script output. Hindi in Devanagari and other Indian languages are coming; we'll say which ones when they're ready.</p></details>
         <details data-if="MONEY_BACK_DAYS"><summary>What if it isn't for me?</summary>
           <p>You're covered by a <span data-cfg="MONEY_BACK_DAYS"></span>-day money-back guarantee. Email us and we'll refund you.</p></details>
         <details><summary>What is Shorts Studio, and can I buy it now?</summary>
@@ -650,13 +667,13 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     Array.prototype.forEach.call(lazy, function (v) { v.src = v.getAttribute("data-lazy"); });
   }
   // Sound toggle on demo videos: muted by default (autoplay rules), tap to hear it.
-  each(".phone video", function (v) {
+  each(".phone video, .walk video", function (v) {
     var b = document.createElement("button");
     b.type = "button"; b.className = "snd"; b.setAttribute("aria-pressed", "false");
     var set = function () { var on = !v.muted; b.setAttribute("aria-pressed", on ? "true" : "false"); b.setAttribute("aria-label", on ? "Mute video" : "Unmute video"); b.innerHTML = on ? "&#128266; Sound on" : "&#128264; Tap for sound"; };
     b.addEventListener("click", function () {
       var turnOn = v.muted;
-      if (turnOn) each(".phone video", function (o) { if (o !== v && !o.muted) { o.muted = true; o.dispatchEvent(new Event("volumechange")); } });
+      if (turnOn) each(".phone video, .walk video", function (o) { if (o !== v && !o.muted) { o.muted = true; o.dispatchEvent(new Event("volumechange")); } });
       v.muted = !turnOn;
       if (turnOn) { if (!v.src && v.getAttribute("data-lazy")) v.src = v.getAttribute("data-lazy"); v.currentTime = 0; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
       set();
