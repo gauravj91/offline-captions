@@ -9,7 +9,7 @@
 <body>
 <header class="top">
   <div class="brand"><span class="brand-dot"></span>Offline Captions</div>
-  <div class="offline-badge" title="Transcription and rendering happen on this computer. Only the one-time model download uses the internet.">
+  <div class="offline-badge" title="Transcription and rendering happen on this computer. Only the one-time model download, and links you paste yourself, use the internet.">
     <span class="pulse"></span>Runs offline · nothing uploaded
   </div>
   <div class="top-actions">
@@ -27,6 +27,14 @@
       <div class="dz-title">Drop your videos here</div>
       <div class="dz-sub">One clip or a whole batch. MP4, MOV, MKV, WebM.</div>
       <button class="btn" id="btn-pick">Choose videos</button>
+      <form class="link-row" id="link-form" autocomplete="off">
+        <label for="link-input" class="link-label">or paste a Google Drive / Dropbox link</label>
+        <div class="link-field">
+          <input type="text" id="link-input" spellcheck="false" placeholder="https://drive.google.com/file/d/…" aria-describedby="link-note">
+          <button class="btn sm" id="btn-link" type="submit">Add</button>
+        </div>
+        <div class="link-note" id="link-note" role="status" hidden></div>
+      </form>
     </div>
 
     <section class="card settings">
