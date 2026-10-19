@@ -83,21 +83,14 @@ async function refreshModel() {
   state.cached[state.model] = await isCached(m.id);
   const cached = state.cached[state.model];
   const threads = crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1;
-  $('#model-name').textContent = `${m.label} · ${state.device === 'webgpu' ? 'WebGPU' : `WASM (${threads} thread${threads > 1 ? 's' : ''})`}`;
+  $('#model-name').textContent = m.label;
   $('#model-sub').textContent = cached ? 'In this browser\'s cache. Transcription runs on this device.' : `One-time download, about ${sizeLabel(mb)}.`;
   const pill = $('#model-pill');
   pill.className = `pill ${cached ? 'ok' : 'warn'}`;
   pill.textContent = cached ? '✓ Cached' : sizeLabel(mb);
-  $('#model-hint').textContent = state.model === 'base' ? `Whisper base: quickest, ~${sizeLabel(CFG.MODELS.base.mb[state.device])}.` : `Whisper small: more accurate, ~${sizeLabel(CFG.MODELS.small.mb[state.device])}, slower.`;
   updateStart();
 }
 
-$$('#seg-model button').forEach((b) => b.addEventListener('click', () => {
-  if (state.busy) return;
-  $$('#seg-model button').forEach((x) => x.classList.toggle('on', x === b));
-  state.model = b.dataset.v;
-  refreshModel();
-}));
 $('#sel-lang').addEventListener('change', (e) => {
   if (e.target.value === 'hinglish') {
     e.target.value = state.lang;
@@ -352,9 +345,13 @@ function updateReviewNote() {
   const flagged = ws.filter((w) => w.review).length;
   $('#flag-count').textContent = flagged;
   $('#btn-next-flag').disabled = !flagged;
-  $('#review-note').innerHTML = flagged
-    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: the model was unsure. Click a word to hear it and fix it; press Enter to keep it.`
-    : `All ${ws.length} words look good. Click any word to jump there or edit it.`;
+  const deeper = flagged && state.model === 'base' && !state.busy && !ws.some((w) => w.edited)
+    && flagged / ws.length > CFG.DEEPER_PASS_RATIO;
+  $('#review-note').innerHTML = (flagged
+    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: unsure words. Click a word to hear it and fix it; press Enter to keep it.`
+    : `All ${ws.length} words look good. Click any word to jump there or edit it.`)
+    + (deeper ? ' <button class="link" id="btn-deeper">Hard audio? Run a deeper pass</button>' : '');
+  if (deeper) $('#btn-deeper').addEventListener('click', () => { state.model = 'small'; refreshModel().then(start); });
 }
 
 let nowIdx = -1;
@@ -579,6 +576,8 @@ function showAfterUpsell() {
   if (!window.Worker || !window.WebAssembly) unsupported.push('transcription');
   if (unsupported.length) showErr(`This browser is missing ${unsupported.join(' and ')}. Use a recent Chrome, Edge or Safari for the full experience.`);
   await detectDevice();
+  // Pick the pack for the user: the accurate one when the GPU can run it fast, else the quick one.
+  state.model = state.device === 'webgpu' ? 'small' : 'base';
   await Promise.all([document.fonts.load('40px "Anton"'), document.fonts.load('40px "Montserrat Thin ExtraBold"')]).catch(() => {});
   renderPresets();
   syncStyle();
