@@ -24,6 +24,17 @@ export async function tour(win, dir) {
   win.webContents.on('console-message', (e) => console.log('[renderer]', e.message ?? e));
 
   await waitFor('!!window.__ui', 20000);
+  if (process.env.CAPTIONS_UI_TOUR === 'link') { // paste-a-link import (needs internet; CAPTIONS_UI_LINK = a direct/Drive/Dropbox video link)
+    await js(`window.__ui.addLink('https://youtu.be/dQw4w9WgXcQ')`);
+    await shot('link-1-blocked.png');
+    await js(`window.__ui.addLink(${JSON.stringify(process.env.CAPTIONS_UI_LINK)})`);
+    await waitFor("window.__ui.state.jobs.some((j) => j.status === 'downloading' && j.progress > 0.1) || window.__ui.state.jobs.some((j) => j.status !== 'downloading')", 120000);
+    await shot('link-2-downloading.png');
+    await waitFor("window.__ui.state.jobs.every((j) => j.status !== 'downloading')", 600000);
+    await shot('link-3-queued.png');
+    console.log('[shots] jobs', JSON.stringify(await js('window.__ui.state.jobs.map(({ name, status, error, file }) => ({ name, status, error, file }))')));
+    return app.exit(0);
+  }
   const videos = process.env.CAPTIONS_UI_VIDEO.split(',');
   await js(`window.__ui.addFiles(${JSON.stringify(videos)})`);
   await sleep(500);
