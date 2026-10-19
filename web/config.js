@@ -15,10 +15,12 @@ window.WEB_CONFIG = {
   DEFAULT_MODEL: 'base',
   // sizes in MB as listed on Hugging Face (encoder + decoder + tokenizer)
   MODELS: {
-    base:  { id: 'onnx-community/whisper-base_timestamped',  label: 'Whisper base',  note: 'Fast',   mb: { wasm: 80,  webgpu: 139 } },
-    small: { id: 'onnx-community/whisper-small_timestamped', label: 'Whisper small', note: 'Better', mb: { wasm: 252, webgpu: 512 } },
+    base:  { id: 'onnx-community/whisper-base_timestamped',  label: 'Quick speech pack',  note: 'Fast',   mb: { wasm: 80,  webgpu: 139 } },
+    small: { id: 'onnx-community/whisper-small_timestamped', label: 'Accurate speech pack', note: 'Better', mb: { wasm: 252, webgpu: 512 } },
   },
-  REVIEW_THRESHOLD: 0.6,        // same as src/review.mjs THRESHOLDS.whisper
+  REVIEW_THRESHOLD: 0.6,
+  // If more than this share of words is flagged on the quick pack, offer a deeper pass.
+  DEEPER_PASS_RATIO: 0.08,        // same as src/review.mjs THRESHOLDS.whisper
 
   // ---- desktop upsell ----
   PRICE: '$29',
@@ -30,7 +32,7 @@ window.WEB_CONFIG = {
   DESKTOP_ONLY: [
     'Long videos (no 60 s limit) and batches of many clips',
     '4K export',
-    'NVIDIA Parakeet English: more accurate and faster',
+    'A more accurate, faster English engine',
     'Hinglish mode (Roman-script captions for Hindi-English speech)',
     'A personal dictionary that remembers every fix',
   ],
