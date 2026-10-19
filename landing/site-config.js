@@ -10,6 +10,11 @@ window.SITE_CONFIG = {
   SITE_URL: "https://offlinecaptions.com", // domain live since 19 Oct 2026
   CHECKOUT_URL: "",                      // optional fallback link; Paddle overlay checkout (below) is used when configured
 
+  /* Sales switch. false = Pre-order buttons become "Get the launch price" and point to the
+     launch waitlist, and Paddle isn't loaded. Set true only once PADDLE_ENV is "production". */
+  SALES_OPEN: false,
+  WEB_APP_URL: "https://offline-captions-web.vercel.app",
+
   /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
   PADDLE_CLIENT_TOKEN: "test_614d5608c73d6ff75f543edf96c",
@@ -18,7 +23,7 @@ window.SITE_CONFIG = {
   LICENSE_API: "https://offline-captions-api.hirewire.workers.dev",
   CHECKOUT_URL_INR: "",                  // optional separate checkout for the ₹ price (Razorpay, Lemon Squeezy with INR...)
   WAITLIST_ACTION: "https://offline-captions-api.hirewire.workers.dev/waitlist", // our Worker; export: GET /waitlist/export (admin token, see server/README.md)
-  CONTACT_EMAIL: "",                     // TODO(Gaurav): support address shown in the footer when set
+  CONTACT_EMAIL: "hello@offlinecaptions.com",                     // TODO(Gaurav): support address shown in the footer when set
 
   PRICE_PREORDER: "$29",                 // founding pre-order
   PRICE_FULL: "$39",                     // after launch
