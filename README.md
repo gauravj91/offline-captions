@@ -56,6 +56,7 @@ npm run dist:win     # on Windows -> dist/Offline Captions Setup <v>.exe (NSIS)
 
 The flow, in order:
 1. **Import**: drop or pick one or many videos (batch queue). Language: English (Parakeet) / Hinglish / Other (Whisper, pick the language). Quality fast / balanced / accurate (Parakeet ignores it; the hint says so).
+   **Paste a link** (under the drop zone): the user's own video from Google Drive (`/file/d/ID/view`, `open?id=`, `uc?id=` → `drive.usercontent.google.com/download?…&confirm=t`, virus-scan page handled), Dropbox (rewritten to `dl=1`, `/scl/` keeps `rlkey`), OneDrive/SharePoint, or any direct `https` video link. The main process downloads it into `<tmp>/offline-captions-links/` (wiped on quit and on next start) with progress in the queue row ("Downloading 42%", × cancels), checks it is a video (Content-Type, then ffprobe in the worker), caps it at 4 GB, then queues it like a dropped file. Exports of linked videos default to the Downloads folder. YouTube/Instagram/TikTok/other social links are refused with a note (their terms don't allow downloading); the host list is `BLOCKED_HOSTS` in `src/fetch-link.mjs`. This is the only network use besides the model download, and only when the user presses Add.
 2. **First-run model download**: size shown before you start (Parakeet ~660 MB, Hinglish Swift ~350 MB, Apex ~1.2 GB, Whisper 80–800 MB), byte-level progress bar, stored in `~/.offline-captions/models` (shared with the CLI). "Runs offline · nothing uploaded" badge in the title bar.
 3. **Transcribe** with per-video progress (stage + % of audio windows). The first finished video opens while the rest keep running.
 4. **Review**: 9:16-aware preview with a live HTML caption overlay of the chosen style (mirrors `ass.mjs`: same lines, sizes, outline, modes). Word-by-word transcript, flagged words (`review: true`) in yellow. Click a word: the video jumps there and the word becomes editable inline. Enter keeps it (clears the flag), a change is taught to the personal dictionary via `learn()` and applied to identical words in the same video, empty deletes it, Esc cancels. "Next flagged word" (or N / Tab). Filler-removal toggle (fillers shown struck through).
@@ -74,6 +75,7 @@ About box credits NVIDIA Parakeet (CC-BY-4.0), AI4Bharat IndicConformer (MIT), O
 | `app/renderer/` | Plain HTML/CSS/JS (no framework, no build step). `preview.js` = live caption overlay |
 | `app/dev-shots.mjs` | Dev only: `CAPTIONS_UI_SHOTS=<dir> CAPTIONS_UI_VIDEO=a.mp4,b.mp4 npm run app` drives the real app and saves screenshots |
 | `src/models.mjs` | Model manifest, on-disk status, streaming download with byte progress (also usable from the CLI) |
+| `src/fetch-link.mjs` | Paste-a-link import: link parsing/rewriting, blocked hosts, streaming download with size cap and friendly errors (tests: `test/fetch-link.test.mjs`, no network) |
 | `src/captions.mjs` | `buildCaptions()` split out of `index.mjs` so the main process can call it without loading native modules |
 | `electron-builder.yml` | dmg (arm64 + x64) and NSIS (x64) targets |
 
