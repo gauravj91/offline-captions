@@ -4,7 +4,7 @@
 // Messages out: {type:'progress', ...}  {type:'ready', device, loadMs}  {type:'result', words, ms}  {type:'error', message}
 import { pipeline, env, LogitsProcessor, LogitsProcessorList } from '@huggingface/transformers';
 // Pure helpers shared with the desktop engine (no Node APIs used by these).
-import { windows, alignConfidence, fixTimes } from '../../src/engines/whisper.mjs';
+import { windows, alignConfidence, fixTimes, timingBroken, spreadOverSegments, clampLong } from '../../src/engines/whisper.mjs';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true; // Cache API: downloaded once, then offline
@@ -72,9 +72,16 @@ async function transcribe({ audio, language }) {
     const lp = new LogitsProcessorList(); lp.push(rec);
     const out = await asr(audio.subarray(a, b), { ...opts, logits_processor: lp });
     const off = a / SR;
-    const words = (out.chunks || [])
+    let words = (out.chunks || [])
       .map((c) => ({ text: c.text.trim(), start: off + Number(c.timestamp?.[0] ?? 0), end: off + Number(c.timestamp?.[1] ?? c.timestamp?.[0] ?? 0) }))
       .filter((w) => w.text);
+    // Word times can collapse to the end of the window (speech then crowd noise/music):
+    // re-time from the segment pass, which stays reliable.
+    if (timingBroken(words.map((w) => ({ ...w, start: w.start - off, end: w.end - off })), (b - a) / SR)) {
+      const seg = await asr(audio.subarray(a, b), { ...opts, return_timestamps: true });
+      words = spreadOverSegments(words, seg.chunks, off);
+    }
+    clampLong(words);
     const tokens = rec.steps.filter((t) => t.id < eot).map((t) => ({ text: tk.decode([t.id], { skip_special_tokens: true }), p: t.p }));
     all.push(...alignConfidence(words, tokens));
     post({ type: 'progress', stage: 'transcribe', fraction: b / audio.length });
