@@ -40,6 +40,19 @@ export async function probe(file) {
   return { width, height, duration: Number(j.format?.duration || 0) };
 }
 
+/** True if the file has a real video stream (not just cover art), false if not or unreadable. */
+export async function hasVideoStream(file) {
+  let json;
+  try {
+    json = await run(FFPROBE, ['-v', 'error', '-show_entries', 'stream=codec_type:stream_disposition=attached_pic', '-of', 'json', file]);
+  } catch (e) {
+    if (e.code === 'ENOENT') throw e; // ffprobe itself is missing
+    return false;
+  }
+  const streams = JSON.parse(json).streams || [];
+  return streams.some((s) => s.codec_type === 'video' && !s.disposition?.attached_pic);
+}
+
 /** Decodes the audio track to 16 kHz mono Float32 PCM (what Whisper expects). */
 export async function extractAudio(file) {
   const buf = await run(FFMPEG, [
