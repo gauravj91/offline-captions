@@ -163,7 +163,12 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 
 .next-video{max-width:280px;margin:18px auto 22px;text-align:center}
 .next-video video{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);background:#000;display:block}
-.next-video figcaption{margin-top:8px}</style>
+.next-video figcaption{margin-top:8px}
+
+.walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
+.walk video{display:block;width:100%;height:auto}
+.walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -293,13 +298,13 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     Array.prototype.forEach.call(lazy, function (v) { v.src = v.getAttribute("data-lazy"); });
   }
   // Sound toggle on demo videos: muted by default (autoplay rules), tap to hear it.
-  each(".phone video", function (v) {
+  each(".phone video, .walk video", function (v) {
     var b = document.createElement("button");
     b.type = "button"; b.className = "snd"; b.setAttribute("aria-pressed", "false");
     var set = function () { var on = !v.muted; b.setAttribute("aria-pressed", on ? "true" : "false"); b.setAttribute("aria-label", on ? "Mute video" : "Unmute video"); b.innerHTML = on ? "&#128266; Sound on" : "&#128264; Tap for sound"; };
     b.addEventListener("click", function () {
       var turnOn = v.muted;
-      if (turnOn) each(".phone video", function (o) { if (o !== v && !o.muted) { o.muted = true; o.dispatchEvent(new Event("volumechange")); } });
+      if (turnOn) each(".phone video, .walk video", function (o) { if (o !== v && !o.muted) { o.muted = true; o.dispatchEvent(new Event("volumechange")); } });
       v.muted = !turnOn;
       if (turnOn) { if (!v.src && v.getAttribute("data-lazy")) v.src = v.getAttribute("data-lazy"); v.currentTime = 0; var p = v.play(); if (p && p.catch) p.catch(function () {}); }
       set();
