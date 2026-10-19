@@ -7,7 +7,7 @@
    ===================================================================== */
 window.SITE_CONFIG = {
   APP_NAME: "Offline Captions",          // working name
-  SITE_URL: "https://YOUR-DOMAIN.example", // TODO(Gaurav): domain undecided. Also replace in every *.html, robots.txt, sitemap.xml, llms.txt
+  SITE_URL: "https://offlinecaptions.com", // domain live since 19 Oct 2026
   CHECKOUT_URL: "",                      // optional fallback link; Paddle overlay checkout (below) is used when configured
 
   /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
