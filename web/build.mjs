@@ -31,6 +31,7 @@ const ortDist = path.join(here, 'node_modules/onnxruntime-web/dist');
 for (const f of ['ort-wasm-simd-threaded.jsep.mjs', 'ort-wasm-simd-threaded.jsep.wasm']) fs.copyFileSync(path.join(ortDist, f), path.join(out, 'vendor/ort', f));
 for (const f of ['Anton-Regular.ttf', 'Montserrat-ExtraBold.ttf', 'OFL-Anton.txt', 'OFL-Montserrat.txt']) fs.copyFileSync(path.join(here, '../fonts', f), path.join(out, 'fonts', f));
 fs.copyFileSync(path.join(here, '../landing/site-config.js'), path.join(out, 'site-config.js'));
+fs.copyFileSync(path.join(here, '../landing/analytics.js'), path.join(out, 'analytics.js'));
 for (const f of ['index.html', 'app.css', 'config.js']) fs.copyFileSync(path.join(here, f), path.join(out, f));
 fs.copyFileSync(path.join(here, 'vercel.json'), path.join(out, 'vercel.json'));
 console.log('built', out);
