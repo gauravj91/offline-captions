@@ -5,6 +5,8 @@
    which we show here right after payment (and which is emailed too, once email is wired up). */
 (function () {
   var c = window.SITE_CONFIG || {};
+  // Analytics (GA4 + consent banner) rides on this file because every page already loads it.
+  if (c.GA_ID && !window.__ocAnalytics) { var ga = document.createElement("script"); ga.src = "/analytics.js"; ga.async = true; document.head.appendChild(ga); }
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
   if (!c.SALES_OPEN) { prelaunch(); return; }
   if (!c.PADDLE_CLIENT_TOKEN || !c.PADDLE_PRICE_ID) return;
@@ -48,6 +50,7 @@
           settings: { displayMode: "overlay", theme: "dark", variant: "one-page", allowLogout: true },
           customData: { source: location.pathname }
         });
+        if (window.ocTrack) ocTrack("begin_checkout", { currency: "USD", value: 29, page: location.pathname });
       });
     });
 
@@ -71,6 +74,8 @@
     var d = ev.data || {};
     var txn = d.transaction_id, email = (d.customer && d.customer.email) || "";
     setTimeout(function () { if (window.Paddle && window.Paddle.Checkout) window.Paddle.Checkout.close(); }, 1500);
+    var tot = (d.totals && d.totals.total) || null, cur = d.currency_code || "USD";
+    if (window.ocTrack) ocTrack("purchase", { transaction_id: txn, currency: cur, value: tot != null ? Number(tot) : undefined });
     showThanks(email);
     pollKey(txn, email, 0);
   }
