@@ -15,6 +15,9 @@ window.SITE_CONFIG = {
   SALES_OPEN: false,
   WEB_APP_URL: "https://app.offlinecaptions.com",
 
+  /* Google Analytics 4 (analytics.js): one web stream for the site + web app. "" = analytics off. */
+  GA_ID: "G-TSRZT7ZS0D",            // GA4 property 559796635 (account "Offline Captions", gauravj.0901@gmail.com)
+
   /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
   PADDLE_CLIENT_TOKEN: "test_614d5608c73d6ff75f543edf96c",
