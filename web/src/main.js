@@ -31,6 +31,8 @@ const fmtTime = (s) => { s = Math.max(0, s || 0); return `${Math.floor(s / 60)}:
 const fmtMB = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(2)} GB` : b >= 1e7 ? `${Math.round(b / 1e6)} MB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
 const sizeLabel = (mb) => (mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${mb} MB`);
 const realLink = (u) => (typeof u === 'string' && /^https:\/\//.test(u) && !/YOUR-DOMAIN\.example/.test(u) ? u : '');
+const track = (n, p) => { try { window.ocTrack?.(n, p); } catch {} };
+const bucket = (sec) => (sec <= 15 ? '0-15s' : sec <= 30 ? '15-30s' : sec <= 60 ? '30-60s' : sec <= 180 ? '1-3m' : '3m+');
 const upsellUrl = () => realLink(CFG.UPSELL_URL) || realLink(SITE.CHECKOUT_URL) || realLink(SITE.SITE_URL);
 const endSec = () => Math.min(state.meta?.duration || 0, CFG.MAX_SECONDS);
 const baseName = (n) => n.replace(/\.[^.]+$/, '');
@@ -56,10 +58,16 @@ function setupUpsell() {
   else { cta.removeAttribute('href'); cta.classList.add('disabled'); cta.textContent = 'Pre-orders open soon'; }
 }
 function showDesktop(reason) {
+  track('desktop_upsell_view', { reason: reason ? (reason.includes('4K') && !reason.includes('length') ? '4k' : 'length') : 'menu' });
   $('#desk-why').textContent = reason || 'See the value here, get more on your computer. Same captions, no limits.';
   $('#desktop').showModal();
 }
 $('#btn-desktop').addEventListener('click', () => showDesktop());
+// Any click on a link to the main site's checkout/waitlist from the app = upsell click.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a[href]');
+  if (a && /offlinecaptions\.com\/?(#|$)/.test(a.href) && !/^https:\/\/app\./.test(a.href)) track('desktop_upsell_click', { from: a.closest('#upsell-after') ? 'after_export' : a.closest('#desktop') ? 'dialog' : 'other' });
+}, true);
 
 // ---------------- device / model ----------------
 async function detectDevice() {
@@ -142,6 +150,8 @@ async function setFile(file) {
     note.querySelector('span').textContent = parts.join(' ');
     note.querySelector('#lim-more').addEventListener('click', () => showDesktop(long ? `The desktop app captions videos of any length (and whole batches) on your computer. ${CFG.PRICE} once.` : `The desktop app exports in 4K. ${CFG.PRICE} once.`));
   }
+  track('video_selected', { duration: meta ? bucket(meta.duration) : 'unknown', short_side: meta ? Math.min(meta.width, meta.height) : 0, over_limit: !!long, over_1080: !!big, ext: (file.name.split('.').pop() || '').toLowerCase().slice(0, 5) });
+  if (long || big) track('limit_hit', { reason: long && big ? 'length_and_4k' : long ? 'length' : '4k' });
   updateStart();
 }
 function clearFile() {
@@ -205,6 +215,7 @@ async function start() {
   state.busy = true; updateStart(); hideErr();
   const T = state.timings;
   T.clipSeconds = +endSec().toFixed(2);
+  track('transcribe_start', { model: state.model, device: state.device, language: state.lang || 'auto', duration: bucket(T.clipSeconds) });
   try {
     // 1. read + decode audio (in memory, this tab)
     const t0 = performance.now();
@@ -261,8 +272,10 @@ async function start() {
     $('#frame-busy').hidden = true;
     $('#dl').hidden = true;
     renderWords(); rebuildLines();
+    track('transcribe_complete', { model: state.model, device: T.device, words: words.length, flagged: words.filter((w) => w.review).length, transcribe_ms: T.transcribeMs, model_load_ms: T.modelLoadMs, from_cache: T.modelFromCache, realtime: T.realtimeFactor });
   } catch (e) {
     console.error(e);
+    track('transcribe_error', { model: state.model, device: state.device, message: String(e.message || e).slice(0, 90) });
     showScreen('import');
     showErr(String(e.message || e));
     $('#dl').hidden = true;
@@ -356,7 +369,7 @@ function updateReviewNote() {
     ? `<b>${flagged}</b> of ${ws.length} words are highlighted: unsure words. Click a word to hear it and fix it; press Enter to keep it.`
     : `All ${ws.length} words look good. Click any word to jump there or edit it.`)
     + (deeper ? ' <button class="link" id="btn-deeper">Hard audio? Run a deeper pass</button>' : '');
-  if (deeper) $('#btn-deeper').addEventListener('click', () => { state.model = 'small'; refreshModel().then(start); });
+  if (deeper) $('#btn-deeper').addEventListener('click', () => { track('deeper_pass_click', {}); state.model = 'small'; refreshModel().then(start); });
 }
 
 let nowIdx = -1;
@@ -489,7 +502,7 @@ function renderPresets() {
     b.querySelector('b').textContent = name;
     b.querySelector('span').textContent = STYLE_NOTES[name] || '';
     drawSample(b.querySelector('canvas'), st);
-    b.addEventListener('click', () => { state.style = { style: name, scale: state.style.scale, position: null }; syncStyle(); });
+    b.addEventListener('click', () => { track('style_change', { style: name }); state.style = { style: name, scale: state.style.scale, position: null }; syncStyle(); });
     return b;
   }));
 }
@@ -519,6 +532,7 @@ $('#btn-srt').addEventListener('click', () => {
   if (!state.project) return;
   if (state.editing) commitEdit(true);
   state.lastSrt = buildSrt(state.lines);
+  track('srt_download', { lines: state.lines.length, edited_words: state.project.words.filter((w) => w.edited).length });
   download(srtBlob(), `${baseName(state.file.name)}.captions.srt`);
 });
 
@@ -527,6 +541,7 @@ async function exportVideo() {
   if (state.editing) commitEdit(true);
   state.exporting = true;
   video.pause();
+  track('export_start', { style: state.style.style, scale: state.style.scale, moved: !!state.style.position, edited_words: state.project.words.filter((w) => w.edited).length });
   $('#btn-export').disabled = true; $('#btn-srt').disabled = true;
   $('#ex').hidden = false; $('#ex-done').hidden = true; $('#upsell-after').hidden = true;
   $('#ex-text').textContent = 'Rendering in this tab…';
@@ -546,9 +561,11 @@ async function exportVideo() {
     $('#ex-done').hidden = false;
     $('#ex-done-text').textContent = `Saved ${name} · ${r.width}×${r.height} · ${fmtMB(r.blob.size)} · ${(r.ms / 1000).toFixed(1)} s`;
     const again = $('#ex-again'); again.href = href; again.download = name;
+    track('export_complete', { style: state.style.style, size: `${r.width}x${r.height}`, export_ms: r.ms, codec: r.codec, mb: +(r.blob.size / 1e6).toFixed(1) });
     showAfterUpsell();
   } catch (e) {
     console.error(e);
+    track('export_error', { message: String(e.message || e).slice(0, 90) });
     $('#ex-text').textContent = `Export failed: ${e.message || e}. The SRT still works.`;
     state.timings.exportError = String(e.message || e);
   } finally {
