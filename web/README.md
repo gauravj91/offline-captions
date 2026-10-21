@@ -32,7 +32,7 @@ Libraries are bundled or vendored (no CDN at runtime): transformers.js + onnxrun
 
 | Constant | Value (proposal; Gaurav decides) | Effect |
 |---|---|---|
-| `MAX_SECONDS` | 60 | Longer clips: a clear note, the first 60 s is captioned and exported, "Full length in the desktop app" link |
+| `MAX_SECONDS` | 300 (60 until 21 Oct 2026) | Longer clips: a clear note, the first 5 min is captioned and exported, "Full length in the desktop app" link |
 | `MAX_EXPORT_SHORT_SIDE` | 1080 | 4K sources export at 1080p (e.g. 1080×1920), with a note |
 | `STYLES` | all 4 | |
 | `WATERMARK` | false | No watermark (none is drawn) |
@@ -82,7 +82,7 @@ Test harness: `test/e2e-electron.cjs` (see its header). It uses Electron's Chrom
 ## Known gaps
 
 - Only verified headless in Electron's Chromium (WASM path). WebGPU, Safari, Firefox and real phones are untested.
-- The whole file is read into memory (fine at ≤60 s; a 4K 60 s clip can be several hundred MB).
+- The whole file is read into memory (fine at ≤5 min for typical phone clips; a 4K 5-min clip can be over 1 GB, which may fail on low-memory devices).
 - Edit lists are approximated (the first shown frame becomes t=0). Audio priming offsets of ~20 ms are not compensated.
 - HEVC (iPhone "High Efficiency") MP4s only export where the browser can decode HEVC with WebCodecs. Otherwise the seek fallback needs `<video>` HEVC support.
 - No vocabulary prompt field, no persistent dictionary (by design: desktop), no cancel button for download/transcribe/export.
