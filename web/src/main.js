@@ -34,6 +34,7 @@ const realLink = (u) => (typeof u === 'string' && /^https:\/\//.test(u) && !/YOU
 const track = (n, p) => { try { window.ocTrack?.(n, p); } catch {} };
 const bucket = (sec) => (sec <= 15 ? '0-15s' : sec <= 30 ? '15-30s' : sec <= 60 ? '30-60s' : sec <= 180 ? '1-3m' : '3m+');
 const upsellUrl = () => realLink(CFG.UPSELL_URL) || realLink(SITE.CHECKOUT_URL) || realLink(SITE.SITE_URL);
+const limLabel = (long) => { const s = CFG.MAX_SECONDS; return s >= 60 && s % 60 === 0 ? `${s / 60} ${long ? (s === 60 ? 'minute' : 'minutes') : 'min'}` : `${s} ${long ? 'seconds' : 's'}`; };
 const endSec = () => Math.min(state.meta?.duration || 0, CFG.MAX_SECONDS);
 const baseName = (n) => n.replace(/\.[^.]+$/, '');
 
@@ -144,7 +145,7 @@ async function setFile(file) {
   note.hidden = !(long || big);
   if (long || big) {
     const parts = [];
-    if (long) parts.push(`This clip is ${fmtTime(meta.duration)}. The web version captions the first ${CFG.MAX_SECONDS} seconds.`);
+    if (long) parts.push(`This clip is ${fmtTime(meta.duration)}. The web version captions the first ${limLabel(true)}.`);
     if (big) { const o = outputSize(meta.width, meta.height, CFG.MAX_EXPORT_SHORT_SIDE); parts.push(`It will export at ${o.width}×${o.height} (1080p).`); }
     note.innerHTML = `<span></span> <button class="link" id="lim-more">Full length${big ? ' and 4K' : ''} in the desktop app</button>`;
     note.querySelector('span').textContent = parts.join(' ');
@@ -302,7 +303,7 @@ function openReview() {
   const r = state.meta.width / state.meta.height;
   $('#ratio').textContent = Math.abs(r - 9 / 16) < 0.02 ? '9:16' : Math.abs(r - 1) < 0.02 ? '1:1' : Math.abs(r - 16 / 9) < 0.02 ? '16:9' : `${state.meta.width}×${state.meta.height}`;
   const o = outputSize(state.meta.width, state.meta.height, CFG.MAX_EXPORT_SHORT_SIDE);
-  $('#ex-res').textContent = `MP4 ${o.width}×${o.height}${o.scaled ? ' (1080p)' : ''}${state.meta.duration > CFG.MAX_SECONDS + 0.5 ? ` · first ${CFG.MAX_SECONDS} s` : ''}`;
+  $('#ex-res').textContent = `MP4 ${o.width}×${o.height}${o.scaled ? ' (1080p)' : ''}${state.meta.duration > CFG.MAX_SECONDS + 0.5 ? ` · first ${limLabel(false)}` : ''}`;
   $('#ex-done').hidden = true; $('#upsell-after').hidden = true;
   $('#words').replaceChildren(); $('#review-note').textContent = '';
   fitFrame();
@@ -592,7 +593,7 @@ function showAfterUpsell() {
 // ---------------- boot ----------------
 (async () => {
   setupUpsell();
-  $('#lim-sec').textContent = `${CFG.MAX_SECONDS} s`;
+  $('#lim-sec').textContent = limLabel(true);
   const unsupported = [];
   if (!('VideoEncoder' in window)) unsupported.push('video export (WebCodecs)');
   if (!window.Worker || !window.WebAssembly) unsupported.push('transcription');
