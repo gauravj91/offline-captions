@@ -5,7 +5,7 @@
    ===================================================================== */
 window.WEB_CONFIG = {
   // ---- free web limits ----
-  MAX_SECONDS: 60,              // longest video the web version captions (longer: first 60 s, or desktop app)
+  MAX_SECONDS: 300,             // longest video the web version captions (longer: first 5 min, or desktop app). Raised from 60 s on 21 Oct 2026 (WithSubtitles' free tier has no cap)
   MAX_EXPORT_SHORT_SIDE: 1080,  // 1080p cap: the short side of the exported MP4 (9:16 -> 1080x1920)
   STYLES: ['bold', 'clean', 'punch', 'reveal'], // all four styles are free
   WATERMARK: false,             // no watermark on web exports
@@ -30,7 +30,7 @@ window.WEB_CONFIG = {
   // TODO(Gaurav): set once the landing page has a domain/checkout.
   UPSELL_URL: '',
   DESKTOP_ONLY: [
-    'Long videos (no 60 s limit) and batches of many clips',
+    'Long videos (no 5-minute limit) and batches of many clips',
     '4K export',
     'A more accurate, faster English engine',
     'Hinglish mode (Roman-script captions for Hindi-English speech)',
