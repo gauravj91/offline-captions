@@ -145,6 +145,6 @@ test("dodo: live env ignores test-mode webhooks; pre-order copy in key email", a
   delete env.DODO_ENV;
   const { keyEmail } = await import("../src/worker.js");
   const m = keyEmail([{ tier: "founding", key: "OC1.x", created: "2026-10-22" }], "purchase", true);
-  assert.match(m.subject, /pre-order/); assert.match(m.text, /isn't out yet/); assert.match(m.text, /14 days/);
+  assert.match(m.text, /download\/windows/); assert.match(m.text, /Mac: coming soon/); assert.match(m.text, /14 days/);
   assert.doesNotMatch(keyEmail([{ tier: "full", key: "OC1.y" }], "recover", false).text, /14 days/);
 });
