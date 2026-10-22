@@ -1,0 +1,22 @@
+name: relay-exe
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download and relay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --pattern '*.exe' --dir out
+          exe=$(ls out/*.exe)
+          sha256sum "$exe"
+          u1=$(curl -fsS -F "file=@$exe" https://temp.sh/upload || echo none)
+          u2=$(curl -fsS -F "file=@$exe" -F expires=24 https://0x0.st || echo none)
+          gh release edit "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --notes "RELAY1=$u1 RELAY2=$u2"
