@@ -5,7 +5,7 @@
 import { PRESETS, resolveStyle } from '../../src/styles.mjs';
 import { segment, removeFillers } from '../../src/segment.mjs';
 import { flagForReview } from '../../src/review.mjs';
-import { buildSrt } from '../../src/srt.mjs';
+import { buildSrt, buildVtt, buildTxt } from '../../src/srt.mjs';
 import { drawCaption, drawSample } from './draw.js';
 import { decodeAudio, toWhisperAudio, exportMp4, outputSize } from './media.js';
 
@@ -537,13 +537,22 @@ $('#btn-srt').addEventListener('click', () => {
   download(srtBlob(), `${baseName(state.file.name)}.captions.srt`);
 });
 
+for (const [id, fmt, build, mime] of [['#btn-vtt', 'vtt', buildVtt, 'text/vtt'], ['#btn-txt', 'txt', buildTxt, 'text/plain']]) {
+  $(id).addEventListener('click', () => {
+    if (!state.project) return;
+    if (state.editing) commitEdit(true);
+    track('srt_download', { format: fmt, lines: state.lines.length, edited_words: state.project.words.filter((w) => w.edited).length });
+    download(new Blob([build(state.lines)], { type: mime }), `${baseName(state.file.name)}.captions.${fmt}`);
+  });
+}
+
 async function exportVideo() {
   if (!state.project || state.exporting) return;
   if (state.editing) commitEdit(true);
   state.exporting = true;
   video.pause();
   track('export_start', { style: state.style.style, scale: state.style.scale, moved: !!state.style.position, edited_words: state.project.words.filter((w) => w.edited).length });
-  $('#btn-export').disabled = true; $('#btn-srt').disabled = true;
+  $('#btn-export').disabled = true; $('#btn-srt').disabled = true; $('#btn-vtt').disabled = true; $('#btn-txt').disabled = true;
   $('#ex').hidden = false; $('#ex-done').hidden = true; $('#upsell-after').hidden = true;
   $('#ex-text').textContent = 'Rendering in this tab…';
   const onProgress = (f) => { const p = Math.round(f * 100); $('#ex-bar').style.width = `${p}%`; $('#ex-pct').textContent = `${p}%`; };
@@ -571,7 +580,7 @@ async function exportVideo() {
     state.timings.exportError = String(e.message || e);
   } finally {
     state.exporting = false;
-    $('#btn-export').disabled = false; $('#btn-srt').disabled = false;
+    $('#btn-export').disabled = false; $('#btn-srt').disabled = false; $('#btn-vtt').disabled = false; $('#btn-txt').disabled = false;
   }
 }
 $('#btn-export').addEventListener('click', exportVideo);
