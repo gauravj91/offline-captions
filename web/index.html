@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Offline Captions for the web: free animated captions, made in your browser</title>
-<meta name="description" content="Drop a short video, get word-by-word animated captions and an SRT. Transcription and rendering run in your browser: your video never leaves your device.">
+<meta name="description" content="Drop a short video, get word-by-word animated captions plus SRT, VTT or TXT. Transcription and rendering run in your browser: your video never leaves your device.">
 <meta name="theme-color" content="#0b0b0d">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.huggingface.co https://*.hf.co blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="app.css">
@@ -26,7 +26,7 @@
   <div class="import-col">
     <div class="hero">
       <h1>Animated captions for your short video. <span>Made right here, in your browser.</span></h1>
-      <p class="muted">Free for clips up to <b id="lim-sec">5 minutes</b>: word-by-word captions in 4 styles, MP4 up to 1080p with no watermark, and an SRT file.</p>
+      <p class="muted">Free for clips up to <b id="lim-sec">5 minutes</b>: word-by-word captions in 4 styles, MP4 up to 1080p with no watermark, plus SRT, VTT and TXT files.</p>
     </div>
 
     <div class="dropzone" id="dropzone" tabindex="0">
@@ -140,6 +140,8 @@
       <div class="export-btns">
         <button class="btn primary" id="btn-export">Export MP4</button>
         <button class="btn ghost" id="btn-srt">SRT</button>
+        <button class="btn ghost" id="btn-vtt" title="WebVTT subtitles">VTT</button>
+        <button class="btn ghost" id="btn-txt" title="Plain-text transcript">TXT</button>
       </div>
       <div class="dl" id="ex" hidden>
         <div class="bar"><i id="ex-bar"></i></div>
@@ -160,7 +162,7 @@
   <p class="muted" id="desk-why">See the value here, get more on your computer. Same captions, no limits.</p>
   <ul class="credits" id="desk-list"></ul>
   <p class="price"><b id="desk-price">$29</b> <span class="muted" id="desk-price-note">founding price, one-time</span></p>
-  <p class="muted small">Still free here: clips up to 5 minutes, all four styles, 1080p MP4 with no watermark, and SRT files.</p>
+  <p class="muted small">Still free here: clips up to 5 minutes, all four styles, 1080p MP4 with no watermark, and SRT, VTT and TXT files.</p>
   <form method="dialog" class="dlg-actions"><button class="btn ghost">Keep using the web version</button><a class="btn primary" id="desk-cta" target="_blank" rel="noopener">Get the desktop app</a></form>
 </dialog>
 
