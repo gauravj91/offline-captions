@@ -1,6 +1,6 @@
 # Offline Captions
 
-> Offline Captions (working name) is a desktop app for Mac and Windows that adds animated, word-by-word highlight captions to short-form videos (Reels, Shorts, TikTok). Speech is transcribed on the user's own computer and it works offline. Unlimited videos, no watermark, no subscription: a one-time purchase of $39, or $29 as a founding pre-order (pre-launch, Oct 2026).
+> Offline Captions (working name) is a desktop app for Mac and Windows that adds animated, word-by-word highlight captions to short-form videos (Reels, Shorts, TikTok). Speech is transcribed on the user's own computer and it works offline. Unlimited videos, no watermark, no subscription: a one-time purchase of $39, or $29 at the founding price. Windows version available to download now; Mac version coming soon.
 
 Key facts:
 - Runs fully offline; videos and audio are never uploaded.
