@@ -1,5 +1,5 @@
-// Offline Captions license server — Cloudflare Worker + KV.
-// Paddle (merchant of record) sends webhooks here; we issue Ed25519-signed license keys
+// Offline Captions license server — Cloudflare Worker + Durable Object.
+// Dodo Payments (merchant of record, since 22 Oct 2026; Paddle code kept but unused) sends webhooks here; we issue Ed25519-signed license keys
 // that the desktop app verifies offline, and track device activations in KV.
 //
 // Bindings
@@ -10,7 +10,11 @@
 //   DEVICE_LIMIT          max active devices per license (default 2)
 //   ALLOWED_ORIGINS       comma-separated origins allowed to call /api/* from a browser ("*" = any)
 //   LICENSE_PUBLIC_KEY    base64url raw Ed25519 public key (also baked into the desktop app)
+//   DODO_ENV              "test" | "live"
+//   DODO_PRODUCTS         JSON {"<product_id>": "founding"|"full", ...}
 // Secrets
+//   DODO_WEBHOOK_SECRET   whsec_… signing key of the Dodo TEST-mode webhook endpoint (Standard Webhooks)
+//   DODO_WEBHOOK_SECRET_LIVE  same, for the LIVE-mode endpoint
 //   PADDLE_WEBHOOK_SECRET endpoint secret key of the Paddle notification destination
 //   LICENSE_PRIVATE_KEY   base64url PKCS8 Ed25519 private key
 //   WAITLIST_ADMIN_TOKEN  bearer token for GET /waitlist/export (CSV) and /waitlist/stats
@@ -78,6 +82,16 @@ export async function verifyPaddleSignature(secret, header, rawBody, nowSec = Da
   const hex = [...mac].map((b) => b.toString(16).padStart(2, "0")).join("");
   return sigs.some((s) => timingSafeEqual(s, hex));
 }
+// Standard Webhooks (Dodo): base64 HMAC-SHA256 over `${id}.${ts}.${rawBody}`, key = base64-decoded secret minus "whsec_".
+export async function verifyStandardWebhook(secret, id, ts, sigHeader, rawBody, nowSec = Date.now() / 1000, toleranceSec = 300) {
+  if (!secret || !id || !ts || !sigHeader || Math.abs(nowSec - Number(ts)) > toleranceSec) return false;
+  const raw = Uint8Array.from(atob(secret.replace(/^whsec_/, "")), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey("raw", raw, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(`${id}.${ts}.${rawBody}`)));
+  let b = ""; for (const x of mac) b += String.fromCharCode(x);
+  const want = btoa(b);
+  return sigHeader.split(" ").some((p) => { const [v, sig] = p.split(","); return v === "v1" && sig && timingSafeEqual(sig, want); });
+}
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
   let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -136,6 +150,84 @@ async function issueLicense(env, txn) {
   await putJSON(env, `lic:${lid}`, rec);
   await store(env).put(`txn:${txn.id}`, lid);
   return rec;
+}
+
+// Provider-neutral issue (Dodo). `o` = {txn, tier, email, customer_id, product_id, currency, total, country, provider}
+async function issueLicenseFor(env, o) {
+  const existing = await store(env).get(`txn:${o.txn}`);
+  if (existing) return getJSON(env, `lic:${existing}`);
+  const lid = newId(); const iat = Math.floor(Date.now() / 1000);
+  const email = o.email ? String(o.email).toLowerCase() : null;
+  const key = await signToken(env, "OC1", { l: lid, t: o.tier, i: iat, ...(email ? { e: email } : {}) });
+  const rec = { lid, key, tier: o.tier, status: "active", created: new Date().toISOString(), provider: o.provider,
+    txn: o.txn, customer_id: o.customer_id || null, email, price_id: o.product_id || null, currency: o.currency || null,
+    total: o.total ?? null, country: o.country || null, devices: [] };
+  await putJSON(env, `lic:${lid}`, rec);
+  await store(env).put(`txn:${o.txn}`, lid);
+  return rec;
+}
+
+async function handleDodoWebhook(req, env) {
+  const raw = await req.text();
+  const id = req.headers.get("webhook-id"), ts = req.headers.get("webhook-timestamp");
+  const sigH = req.headers.get("webhook-signature");
+  // Test-mode and live-mode endpoints each have their own signing key; accept either.
+  if (!(await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET, id, ts, sigH, raw)) &&
+      !(await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET_LIVE, id, ts, sigH, raw)))
+    return json({ error: "bad_signature" }, 401);
+  if (await store(env).get(`evt:${id}`)) return json({ ok: true, duplicate: true });
+  const evt = JSON.parse(raw); const d = evt.data || {};
+  let products = {}; try { products = JSON.parse(env.DODO_PRODUCTS || "{}"); } catch {}
+  let result = "ignored";
+  switch (evt.type) {
+    case "payment.succeeded": {
+      const pid = d.product_cart?.[0]?.product_id || null;
+      const tier = d.metadata?.tier === "founding" || d.metadata?.tier === "full" ? d.metadata.tier : products[pid] || "full";
+      if (pid && Object.keys(products).length && !products[pid]) { result = "other_product"; break; }
+      const rec = await issueLicenseFor(env, { provider: "dodo", txn: d.payment_id, tier, email: d.customer?.email,
+        customer_id: d.customer?.customer_id, product_id: pid, currency: d.currency, total: d.total_amount, country: d.billing?.country });
+      if (d.customer?.customer_id) await putJSON(env, `cust:${d.customer.customer_id}`, { email: d.customer.email, name: d.customer.name || null });
+      result = `license:${rec.lid}`;
+      break;
+    }
+    case "refund.succeeded": {
+      const lid = d.payment_id && (await store(env).get(`txn:${d.payment_id}`));
+      if (!lid) { result = "no_license"; break; }
+      const rec = await getJSON(env, `lic:${lid}`);
+      const full = d.is_partial === false || (d.is_partial == null && rec.total != null && Number(d.amount) >= Number(rec.total));
+      if (full) { await setStatusByTxn(env, d.payment_id, "revoked", "refund"); result = "revoked"; }
+      else result = "partial_refund_kept";
+      break;
+    }
+    case "dispute.opened":
+    case "dispute.lost":
+    case "dispute.accepted":
+    case "dispute.expired":
+      if (d.payment_id && (await setStatusByTxn(env, d.payment_id, "revoked", evt.type))) result = "revoked";
+      break;
+    case "dispute.won":
+    case "dispute.cancelled":
+      if (d.payment_id) {
+        const lid = await store(env).get(`txn:${d.payment_id}`);
+        const rec = lid && (await getJSON(env, `lic:${lid}`));
+        if (rec && rec.status === "revoked" && String(rec.status_reason || "").startsWith("dispute")) {
+          await setStatusByTxn(env, d.payment_id, "active", evt.type); result = "restored";
+        }
+      }
+      break;
+  }
+  await store(env).put(`evt:${id}`, "1", { expirationTtl: 60 * 60 * 24 * 30 });
+  return json({ ok: true, result });
+}
+
+// Local price shown on the site, by visitor country (Cloudflare geo). Mirrors the Dodo by_currency rules.
+const EURO = "AT BE CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK".split(" ");
+const PRICES = { USD: { founding: "$29", full: "$39" }, INR: { founding: "₹1,499", full: "₹1,999" },
+  EUR: { founding: "€29", full: "€39" }, GBP: { founding: "£25", full: "£35" }, CAD: { founding: "$29", full: "C$49" }, AUD: { founding: "$29", full: "A$59" } };
+export function priceFor(country) {
+  const cur = country === "IN" ? "INR" : EURO.includes(country) ? "EUR" : country === "GB" ? "GBP" : country === "CA" ? "CAD" : country === "AU" ? "AUD" : "USD";
+  // CAD/AUD have no founding-price rule, so the founding checkout is forced to USD there.
+  return { country: country || null, currency: cur, founding_currency: PRICES[cur].founding.startsWith("$") ? "USD" : cur, ...PRICES[cur] };
 }
 
 async function setStatusByTxn(env, txnId, status, reason) {
@@ -315,7 +407,9 @@ export default {
     const c = cors(req, env);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: c });
     try {
-      if (url.pathname === "/health") return json({ ok: true, env: env.PADDLE_ENV || "unknown" });
+      if (url.pathname === "/health") return json({ ok: true, provider: "dodo", env: env.DODO_ENV || "unknown" });
+      if (url.pathname === "/webhooks/dodo" && req.method === "POST") return await handleDodoWebhook(req, env);
+      if (url.pathname === "/api/price" && req.method === "GET") return json(priceFor(req.cf?.country), 200, { ...c, "cache-control": "private, max-age=3600" });
       if (url.pathname === "/webhooks/paddle" && req.method === "POST") return await handleWebhook(req, env);
       if (url.pathname === "/waitlist" && req.method === "POST") {
         const r = await handleWaitlist(req, env);
