@@ -18,9 +18,12 @@
 //   PADDLE_WEBHOOK_SECRET endpoint secret key of the Paddle notification destination
 //   LICENSE_PRIVATE_KEY   base64url PKCS8 Ed25519 private key
 //   WAITLIST_ADMIN_TOKEN  bearer token for GET /waitlist/export (CSV) and /waitlist/stats
+//   RESEND_API_KEY        Resend sending key (domain offlinecaptions.com) for license-key emails
+// Optional vars: MAIL_FROM (default "Offline Captions <keys@offlinecaptions.com>"), MAIL_REPLY_TO (default hello@offlinecaptions.com)
 //
 // Key layout
 //   lic:<lid>    license record (JSON)        txn:<txn_id> -> lid
+//   em:<email>   [lid, ...] (licenses bought with that email; used by "find my key")
 //   cust:<ctm>   {email, name}                evt:<event_id> -> "1" (dedupe, 30 days)
 //   wl:<segment>:<email>  waitlist signup {email, segment, intent[], page, country, first, last}
 
@@ -164,7 +167,69 @@ async function issueLicenseFor(env, o) {
     total: o.total ?? null, country: o.country || null, devices: [] };
   await putJSON(env, `lic:${lid}`, rec);
   await store(env).put(`txn:${o.txn}`, lid);
+  if (email) await indexEmail(env, email, lid);
+  rec.isNew = true;
   return rec;
+}
+
+async function indexEmail(env, email, lid) {
+  const k = `em:${email.toLowerCase()}`; const list = (await getJSON(env, k)) || [];
+  if (!list.includes(lid)) { list.push(lid); await putJSON(env, k, list); }
+}
+
+// ---------- email (Resend) ----------
+const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const TIER_NAME = { founding: "Founding license", full: "Full license" };
+export function keyEmail(recs, kind) {
+  const many = recs.length > 1;
+  const subject = kind === "purchase" ? "Your Offline Captions license key" : many ? "Your Offline Captions license keys" : "Your Offline Captions license key";
+  const intro = kind === "purchase" ? "Thanks for buying Offline Captions. Here's your license key." : `You asked us to resend your license key${many ? "s" : ""}.`;
+  const blocks = recs.map((r) => ({ name: TIER_NAME[r.tier] || "License", key: r.key, date: (r.created || "").slice(0, 10) }));
+  const text = [intro, "", ...blocks.flatMap((b) => [`${b.name}${b.date ? ` (bought ${b.date})` : ""}:`, b.key, ""]),
+    "To activate: open Offline Captions, click Activate, and paste the key.",
+    "Get the app: https://offlinecaptions.com/", "Find your key again any time: https://offlinecaptions.com/find-my-key/",
+    "", "Questions? Just reply to this email.", "", "Offline Captions"].join("\n");
+  const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;color:#111;line-height:1.5">
+<h2 style="margin:0 0 12px">Offline Captions</h2><p>${escHtml(intro)}</p>
+${blocks.map((b) => `<p style="margin:16px 0 6px"><b>${escHtml(b.name)}</b>${b.date ? ` <span style="color:#666">(bought ${b.date})</span>` : ""}</p>
+<pre style="white-space:pre-wrap;word-break:break-all;background:#f4f4f4;border:1px solid #ddd;border-radius:8px;padding:12px;font-size:13px">${escHtml(b.key)}</pre>`).join("")}
+<p>To activate: open Offline Captions, click <b>Activate</b>, and paste the key.</p>
+<p><a href="https://offlinecaptions.com/">Get the app</a> · <a href="https://offlinecaptions.com/find-my-key/">Find your key again</a></p>
+<p style="color:#666">Questions? Just reply to this email.</p></div>`;
+  return { subject, text, html };
+}
+async function sendMail(env, to, { subject, text, html }) {
+  if (!env.RESEND_API_KEY) return { skipped: "no_resend_key" };
+  const r = await (env.FETCH || fetch)("https://api.resend.com/emails", { method: "POST",
+    headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({ from: env.MAIL_FROM || "Offline Captions <keys@offlinecaptions.com>", to: [to],
+      reply_to: env.MAIL_REPLY_TO || "hello@offlinecaptions.com", subject, text, html }) });
+  if (!r.ok) { console.error("resend", r.status, await r.text()); return { error: r.status }; }
+  return { ok: true };
+}
+async function emailNewLicense(env, rec) {
+  if (!rec.email) return;
+  try {
+    const res = await sendMail(env, rec.email, keyEmail([rec], "purchase"));
+    if (res.ok) { const cur = await getJSON(env, `lic:${rec.lid}`); cur.emailed_at = new Date().toISOString(); await putJSON(env, `lic:${rec.lid}`, cur); }
+  } catch (e) { console.error("email", e); }
+}
+
+// POST /api/recover {email}: emails every active key bought with that address. Always answers {ok:true}
+// so the endpoint can't be used to learn who bought. One email per address per 10 minutes.
+async function handleRecover(req, env) {
+  let b; try { b = await readBody(req); } catch { return json({ error: "bad_body" }, 400); }
+  const email = String(b.get("email") || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return json({ error: "invalid_email" }, 400);
+  if (await store(env).get(`rl:${email}`)) return json({ ok: true });
+  await store(env).put(`rl:${email}`, "1", { expirationTtl: 600 });
+  let lids = (await getJSON(env, `em:${email}`)) || [];
+  if (!lids.length && store(env).list) // licenses issued before the email index existed
+    lids = (await store(env).list("lic:")).map(([, v]) => JSON.parse(v)).filter((r) => (r.email || "").toLowerCase() === email).map((r) => r.lid);
+  const recs = [];
+  for (const lid of lids) { const r = await getJSON(env, `lic:${lid}`); if (r && r.status === "active") recs.push(r); }
+  if (recs.length) await sendMail(env, email, keyEmail(recs, "recover"));
+  return json({ ok: true });
 }
 
 async function handleDodoWebhook(req, env) {
@@ -187,6 +252,7 @@ async function handleDodoWebhook(req, env) {
       const rec = await issueLicenseFor(env, { provider: "dodo", txn: d.payment_id, tier, email: d.customer?.email,
         customer_id: d.customer?.customer_id, product_id: pid, currency: d.currency, total: d.total_amount, country: d.billing?.country });
       if (d.customer?.customer_id) await putJSON(env, `cust:${d.customer.customer_id}`, { email: d.customer.email, name: d.customer.name || null });
+      if (rec.isNew) await emailNewLicense(env, rec);
       result = `license:${rec.lid}`;
       break;
     }
@@ -418,6 +484,11 @@ export default {
       }
       if ((url.pathname === "/waitlist/export" || url.pathname === "/waitlist/stats") && req.method === "GET")
         return await handleWaitlistAdmin(req, env, url.pathname);
+      if (url.pathname === "/api/recover" && req.method === "POST") {
+        const r = await handleRecover(req, env);
+        for (const [k, v] of Object.entries(c)) r.headers.set(k, v);
+        return r;
+      }
       if (url.pathname.startsWith("/api/")) {
         const r = await handleApi(req, env, url.pathname);
         for (const [k, v] of Object.entries(c)) r.headers.set(k, v);
