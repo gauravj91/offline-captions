@@ -1,15 +1,31 @@
-/* Paddle overlay checkout + local prices + license key hand-off.
-   Config lives in site-config.js (PADDLE_*, LICENSE_API). Paddle is the merchant of record:
-   it picks the buyer's currency and country price (INR in India, EUR in the eurozone, ...),
-   adds VAT/GST, and sends the receipt. Our license server gets a webhook and issues the key,
-   which we show here right after payment (and which is emailed too, once email is wired up). */
+/* Dodo Payments hosted checkout + local prices + license key hand-off (since 22 Oct 2026; Paddle before).
+   Config lives in site-config.js (DODO_*, LICENSE_API). Dodo is the merchant of record: it charges the
+   localized price for the buyer's currency (INR, EUR, GBP, ...), adds VAT/GST and sends the receipt.
+   Buy buttons open Dodo's static checkout link; after payment Dodo redirects back here with
+   ?payment_id=…&status=…&email=…, our license server gets the webhook and issues the key, and we show it. */
 (function () {
   var c = window.SITE_CONFIG || {};
   // Analytics (GA4 + consent banner) rides on this file because every page already loads it.
   if (c.GA_ID && !window.__ocAnalytics) { var ga = document.createElement("script"); ga.src = "/analytics.js"; ga.async = true; document.head.appendChild(ga); }
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  var api = (c.LICENSE_API || "").replace(/\/$/, "");
+
+  // Returning from Dodo checkout (handled even while sales are closed, so test purchases work).
+  var q = new URLSearchParams(location.search);
+  if (q.get("payment_id")) {
+    var pid = q.get("payment_id"), st = q.get("status"), em = q.get("email") || "";
+    history.replaceState(null, "", location.pathname + location.hash);
+    var go = function () {
+      if (st === "succeeded" || st === "processing") {
+        if (window.ocTrack) ocTrack("purchase", { transaction_id: pid });
+        showThanks(em); pollKey(pid, em, 0);
+      } else showFailed();
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
+  }
+
   if (!c.SALES_OPEN) { prelaunch(); return; }
-  if (!c.PADDLE_CLIENT_TOKEN || !c.PADDLE_PRICE_ID) return;
+  if (!c.DODO_PRODUCT_ID) return;
 
   // Before sales open: every Pre-order button sends people to the launch waitlist,
   // and the free web app is offered next to it. Flip SALES_OPEN to undo all of this.
@@ -32,52 +48,37 @@
     each("[data-prelaunch-hide]", function (el) { el.style.display = "none"; });
   }
 
-  var s = document.createElement("script");
-  s.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-  s.onload = init;
-  document.head.appendChild(s);
-
-  function init() {
-    var P = window.Paddle;
-    if (c.PADDLE_ENV === "sandbox") P.Environment.set("sandbox");
-    P.Initialize({ token: c.PADDLE_CLIENT_TOKEN, eventCallback: onEvent });
-
-    each("[data-checkout],[data-checkout-inr]", function (el) {
-      el.addEventListener("click", function (e) {
-        e.preventDefault();
-        P.Checkout.open({
-          items: [{ priceId: c.PADDLE_PRICE_ID, quantity: 1 }],
-          settings: { displayMode: "overlay", theme: "dark", variant: "one-page", allowLogout: true },
-          customData: { source: location.pathname }
-        });
-        if (window.ocTrack) ocTrack("begin_checkout", { currency: "USD", value: 29, page: location.pathname });
-      });
+  var local = null; // {currency, founding, full, founding_currency} from /api/price
+  function checkoutUrl() {
+    var host = c.DODO_ENV === "live" ? "https://checkout.dodopayments.com" : "https://test.checkout.dodopayments.com";
+    var tier = c.DODO_TIER || "founding";
+    var u = host + "/buy/" + encodeURIComponent(tier === "full" ? c.DODO_PRODUCT_ID_FULL : c.DODO_PRODUCT_ID) + "?quantity=1" +
+      "&redirect_url=" + encodeURIComponent(location.origin + "/") +
+      "&metadata_tier=" + tier + "&metadata_source=" + encodeURIComponent(location.pathname);
+    var cur = local && (tier === "founding" ? local.founding_currency : local.currency);
+    if (cur) u += "&paymentCurrency=" + cur;
+    return u;
+  }
+  each("[data-checkout],[data-checkout-inr]", function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (window.ocTrack) ocTrack("begin_checkout", { currency: (local && local.currency) || "USD", page: location.pathname });
+      location.href = checkoutUrl();
     });
+  });
+  // Show the visitor's local price (the license server reads the country from Cloudflare geo).
+  if (api) fetch(api + "/api/price").then(function (r) { return r.json(); }).then(function (p) {
+    local = p;
+    each('[data-cfg="PRICE_PREORDER"]', function (el) { el.textContent = p.founding; });
+    each('[data-cfg="PRICE_FULL"]', function (el) { el.textContent = p.full; });
+  }).catch(function () {});
 
-    // Show the visitor's local price (Paddle detects the country from the IP).
-    localPrice(P, c.PADDLE_PRICE_ID, "PRICE_PREORDER");
-    if (c.PADDLE_PRICE_ID_FULL) localPrice(P, c.PADDLE_PRICE_ID_FULL, "PRICE_FULL");
-  }
-
-  function localPrice(P, priceId, cfgKey) {
-    P.PricePreview({ items: [{ priceId: priceId, quantity: 1 }] }).then(function (r) {
-      var li = r && r.data && r.data.details && r.data.details.lineItems && r.data.details.lineItems[0];
-      var total = li && li.formattedTotals && li.formattedTotals.total;
-      if (!total) return;
-      total = total.replace(/[.,]00(?=\D*$)/, ""); // "₹1,499.00" -> "₹1,499"
-      each('[data-cfg="' + cfgKey + '"]', function (el) { el.textContent = total; });
-    }).catch(function () {});
-  }
-
-  function onEvent(ev) {
-    if (!ev || ev.name !== "checkout.completed") return;
-    var d = ev.data || {};
-    var txn = d.transaction_id, email = (d.customer && d.customer.email) || "";
-    setTimeout(function () { if (window.Paddle && window.Paddle.Checkout) window.Paddle.Checkout.close(); }, 1500);
-    var tot = (d.totals && d.totals.total) || null, cur = d.currency_code || "USD";
-    if (window.ocTrack) ocTrack("purchase", { transaction_id: txn, currency: cur, value: tot != null ? Number(tot) : undefined });
-    showThanks(email);
-    pollKey(txn, email, 0);
+  function showFailed() {
+    var d = document.createElement("dialog");
+    d.style.cssText = "max-width:480px;width:92vw;border:1px solid #333;border-radius:18px;background:#141417;color:#f2f2f2;padding:24px;font:16px/1.5 system-ui,sans-serif";
+    d.innerHTML = '<h2 style="margin:0 0 8px">Payment didn\u2019t go through</h2><p style="margin:0;color:#aaa">You weren\u2019t charged. You can try again, or use another card or payment method.</p>' +
+      '<div style="text-align:right;margin-top:16px"><button style="padding:10px 16px;border-radius:10px;border:1px solid #444;background:transparent;color:#eee;cursor:pointer">Close</button></div>';
+    document.body.appendChild(d); d.querySelector("button").onclick = function () { d.close(); }; d.showModal();
   }
 
   // ---------- thank-you dialog ----------
@@ -109,8 +110,8 @@
     }
   }
   function pollKey(txn, email, n) {
-    if (!c.LICENSE_API || !txn) return setKey(null, "Your key will arrive by email within a few minutes.");
-    fetch(c.LICENSE_API.replace(/\/$/, "") + "/api/license?txn=" + encodeURIComponent(txn) + "&email=" + encodeURIComponent(email))
+    if (!api || !txn) return setKey(null, "Your key will arrive by email within a few minutes.");
+    fetch(api + "/api/license?txn=" + encodeURIComponent(txn) + "&email=" + encodeURIComponent(email))
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
       .then(function (r) {
         if (r.status === 200 && r.j.key) return setKey(r.j.key);
