@@ -183,10 +183,10 @@ const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<":
 const TIER_NAME = { founding: "Founding license", full: "Full license" };
 export function keyEmail(recs, kind, preorder = false) {
   const many = recs.length > 1;
-  const subject = kind === "purchase" ? (preorder ? "Your Offline Captions pre-order and license key" : "Your Offline Captions license key") : many ? "Your Offline Captions license keys" : "Your Offline Captions license key";
-  const intro = kind === "purchase" ? (preorder ? "Thanks for pre-ordering Offline Captions at the founding price. Here's your license key." : "Thanks for buying Offline Captions. Here's your license key.") : `You asked us to resend your license key${many ? "s" : ""}.`;
-  const pre = preorder ? "The desktop app for Mac and Windows isn't out yet. We'll email you the download link at this address the day it's ready. Keep this key: you'll paste it in to activate. Until then, the free web version works now: https://app.offlinecaptions.com" : "";
-  const preHtml = preorder ? `<p>The desktop app for Mac and Windows isn't out yet. We'll email you the download link at this address the day it's ready. Keep this key: you'll paste it in to activate. Until then, the <a href="https://app.offlinecaptions.com">free web version</a> works now.</p>` : "";
+  const subject = kind === "purchase" ? "Your Offline Captions license key" : many ? "Your Offline Captions license keys" : "Your Offline Captions license key";
+  const intro = kind === "purchase" ? (preorder ? "Thanks for buying Offline Captions at the founding price. Here's your license key." : "Thanks for buying Offline Captions. Here's your license key.") : `You asked us to resend your license key${many ? "s" : ""}.`;
+  const pre = preorder ? "Windows: download the app at https://offlinecaptions.com/download/windows , open it, click Activate and paste the key. If Windows says \"unknown publisher\", click More info, then Run anyway.\nMac: coming soon. We'll email you the download at this address the day it's ready." : "";
+  const preHtml = preorder ? `<p><b>Windows:</b> <a href="https://offlinecaptions.com/download/windows">download the app</a>, open it, click <b>Activate</b> and paste the key. If Windows says "unknown publisher", click <b>More info</b>, then <b>Run anyway</b>.</p><p><b>Mac:</b> coming soon. We'll email you the download at this address the day it's ready.</p>` : "";
   const blocks = recs.map((r) => ({ name: TIER_NAME[r.tier] || "License", key: r.key, date: (r.created || "").slice(0, 10) }));
   const text = [intro, "", ...blocks.flatMap((b) => [`${b.name}${b.date ? ` (bought ${b.date})` : ""}:`, b.key, ""]),
     ...(preorder ? [pre, ""] : ["To activate: open Offline Captions, click Activate, and paste the key.", "Get the app: https://offlinecaptions.com/"]),
