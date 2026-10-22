@@ -84,16 +84,16 @@
   // ---------- thank-you dialog ----------
   var dlg;
   function showThanks(email) {
-    var pre = c.PREORDER !== false; // desktop app not shipped yet: buyers are pre-ordering
+    var pre = c.PREORDER !== false; // Mac app not shipped yet: Windows download now, Mac by email later
     dlg = document.createElement("dialog");
     dlg.setAttribute("aria-labelledby", "oc-thx-h");
     dlg.style.cssText = "max-width:560px;width:92vw;border:1px solid #333;border-radius:18px;background:#141417;color:#f2f2f2;padding:28px;font:16px/1.5 system-ui,sans-serif";
     dlg.innerHTML =
-      '<h2 id="oc-thx-h" style="margin:0 0 8px">' + (pre ? "Thank you! Your pre-order is in." : "Thank you! You\u2019re in.") + '</h2>' +
+      '<h2 id="oc-thx-h" style="margin:0 0 8px">' + "Thank you! You\u2019re in." + '</h2>' +
       '<p style="margin:0 0 14px;color:#aaa">We\u2019ve emailed your receipt and key' + (email ? " to <b>" + esc(email) + "</b>" : "") + ". Here\u2019s your license key:</p>" +
       '<div id="oc-key" style="background:#0b0b0d;border:1px solid #333;border-radius:12px;padding:12px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;min-height:48px">Generating your key\u2026</div>' +
       (pre
-        ? '<p style="margin:14px 0 0;color:#aaa;font-size:14px">The desktop app isn\u2019t out yet. We\u2019ll email your download link to this address the day it\u2019s ready. Keep this key: you\u2019ll paste it in to activate. Until then, the <a href="' + esc(c.WEB_APP_URL || "https://app.offlinecaptions.com") + '" style="color:#ffd60a">free web version</a> works now. Lost the key? <a href="/find-my-key/" style="color:#ffd60a">Find my key</a>.</p>'
+        ? '<p style="margin:14px 0 0;color:#aaa;font-size:14px"><b>Windows:</b> <a href="/download/windows" style="color:#ffd60a">download the app</a>, open it, click <b>Activate</b> and paste the key. If Windows says \u201cunknown publisher\u201d, click <b>More info</b>, then <b>Run anyway</b>.<br><b>Mac:</b> coming soon. We\u2019ll email you the download the day it\u2019s ready. Lost the key? <a href="/find-my-key/" style="color:#ffd60a">Find my key</a>.</p>'
         : '<p style="margin:14px 0 0;color:#aaa;font-size:14px">Open Offline Captions, click <b>Activate</b>, and paste it. Lost it later? <a href="/find-my-key/" style="color:#ffd60a">Find my key</a>.</p>') +
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">' +
       '<button id="oc-copy" disabled style="padding:10px 16px;border-radius:10px;border:0;background:#ffd400;color:#111;font-weight:700;cursor:pointer">Copy key</button>' +
