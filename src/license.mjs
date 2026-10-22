@@ -10,7 +10,7 @@ import path from 'node:path';
 
 export const LICENSE_API = process.env.CAPTIONS_LICENSE_API || 'https://offline-captions-api.hirewire.workers.dev';
 // Public half of the signing key (sandbox key; replace when switching Paddle to live).
-export const LICENSE_PUBLIC_KEY = process.env.CAPTIONS_LICENSE_PUBKEY || 'aMorHJXVsA5QiPjz2OlQBAtWz6QMJupXqgFVNr36p14';
+export const LICENSE_PUBLIC_KEY = process.env.CAPTIONS_LICENSE_PUBKEY || 'V2fTkx0uJFZxFCCeSG_0VkzIi7mEv5F4AYsU51FPQ44';
 export const REVALIDATE_DAYS = 14;
 
 const b64uDec = (s) => Buffer.from(s, 'base64url');
