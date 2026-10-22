@@ -137,3 +137,14 @@ test("dodo: key emailed on purchase (once) and find-my-key resends active keys o
   assert.equal((await post("/api/recover", { email: "bad" })).status, 400);
   delete env.RESEND_API_KEY; delete env.FETCH;
 });
+
+test("dodo: live env ignores test-mode webhooks; pre-order copy in key email", async () => {
+  env.DODO_ENV = "live";
+  const r = await (await dhook({ type: "payment.succeeded", data: { payment_id: "pay_t1", customer: { email: "t@t.de" }, product_cart: [{ product_id: "pdt_found" }] } })).json();
+  assert.equal(r.result, "test_mode_ignored");
+  delete env.DODO_ENV;
+  const { keyEmail } = await import("../src/worker.js");
+  const m = keyEmail([{ tier: "founding", key: "OC1.x", created: "2026-10-22" }], "purchase", true);
+  assert.match(m.subject, /pre-order/); assert.match(m.text, /isn't out yet/); assert.match(m.text, /14 days/);
+  assert.doesNotMatch(keyEmail([{ tier: "full", key: "OC1.y" }], "recover", false).text, /14 days/);
+});
