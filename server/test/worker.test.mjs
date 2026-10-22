@@ -74,3 +74,40 @@ test("waitlist: form + JSON signups, intent merge, honeypot, export auth", async
   const csv = await (await worker.fetch(new Request("https://x/waitlist/export?token=admintok"), env)).text();
   assert.match(csv, /"a@ex.test","shorts-studio","upgrade40 bundle79"/); assert.doesNotMatch(csv, /bot@ex.test/);
 });
+
+// ---------- Dodo ----------
+const { verifyStandardWebhook, priceFor } = await import("../src/worker.js");
+env.DODO_WEBHOOK_SECRET = "whsec_" + Buffer.from("dodo-secret-key-bytes-123456").toString("base64");
+env.DODO_PRODUCTS = JSON.stringify({ pdt_found: "founding", pdt_full: "full" });
+async function dsign(id, ts, raw) {
+  const k = await crypto.subtle.importKey("raw", Buffer.from(env.DODO_WEBHOOK_SECRET.slice(6), "base64"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return "v1," + Buffer.from(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(`${id}.${ts}.${raw}`))).toString("base64");
+}
+let wn = 0;
+async function dhook(evt, bad) {
+  const raw = JSON.stringify(evt), id = "msg_" + (++wn), ts = String(Math.floor(Date.now() / 1000));
+  return worker.fetch(new Request("https://x/webhooks/dodo", { method: "POST", body: raw,
+    headers: { "webhook-id": id, "webhook-timestamp": ts, "webhook-signature": bad ? "v1,AAAA" : await dsign(id, ts, raw) } }), env);
+}
+test("dodo: bad signature rejected", async () => {
+  assert.equal((await dhook({ type: "payment.succeeded", data: {} }, true)).status, 401);
+  assert.equal(await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET, "a", "1", "v1,x", "{}"), false);
+});
+test("dodo: payment -> key, refund revokes, dispute won restores only disputes", async () => {
+  const r = await (await dhook({ type: "payment.succeeded", data: { payment_id: "pay_1", total_amount: 2900, currency: "USD",
+    customer: { customer_id: "cus_1", email: "Dodo@Buyer.com" }, product_cart: [{ product_id: "pdt_found", quantity: 1 }], billing: { country: "DE" } } })).json();
+  assert.match(r.result, /^license:/);
+  const lic = await (await worker.fetch(new Request("https://x/api/license?txn=pay_1&email=dodo@buyer.com"), env)).json();
+  assert.equal(lic.tier, "founding"); assert.ok(lic.key.startsWith("OC1."));
+  assert.equal((await (await dhook({ type: "payment.succeeded", data: { payment_id: "pay_x", product_cart: [{ product_id: "pdt_other" }] } })).json()).result, "other_product");
+  assert.equal((await (await dhook({ type: "refund.succeeded", data: { payment_id: "pay_1", amount: 1000, is_partial: true } })).json()).result, "partial_refund_kept");
+  assert.equal((await (await dhook({ type: "refund.succeeded", data: { payment_id: "pay_1", amount: 2900, is_partial: false } })).json()).result, "revoked");
+  assert.equal((await (await dhook({ type: "dispute.won", data: { payment_id: "pay_1" } })).json()).result, "ignored");
+  await dhook({ type: "payment.succeeded", data: { payment_id: "pay_2", total_amount: 3900, customer: { email: "b@c.de" }, product_cart: [{ product_id: "pdt_full" }] } });
+  assert.equal((await (await dhook({ type: "dispute.opened", data: { payment_id: "pay_2" } })).json()).result, "revoked");
+  assert.equal((await (await dhook({ type: "dispute.won", data: { payment_id: "pay_2" } })).json()).result, "restored");
+});
+test("price by country", () => {
+  assert.equal(priceFor("IN").founding, "₹1,499"); assert.equal(priceFor("FR").currency, "EUR");
+  assert.equal(priceFor("CA").founding_currency, "USD"); assert.equal(priceFor(undefined).full, "$39");
+});
