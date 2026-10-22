@@ -67,3 +67,8 @@ jobs:
           tag="${GITHUB_REF_NAME}"; case "$tag" in v*) ;; *) tag="test-$(date -u +%Y%m%d-%H%M)";; esac
           gh release create "$tag" out/* --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
             --title "Test build $tag" --notes "Unsigned test build. Mac: open the .dmg, drag to Applications, then System Settings > Privacy & Security > Open Anyway. Windows: More info > Run anyway."
+          # Hand-off copy for public hosting (the repo is private): temporary 72 h link + checksum in the notes.
+          exe=$(ls out/*.exe | head -1)
+          sum=$(sha256sum "$exe" | cut -d' ' -f1)
+          url=$(curl -fsS -F reqtype=fileupload -F time=72h -F "fileToUpload=@$exe" https://litterbox.catbox.moe/resources/internals/api.php || echo none)
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes "Unsigned build. Windows: More info > Run anyway. EXE_SHA256=$sum EXE_TMP_URL=$url"
