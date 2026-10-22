@@ -89,9 +89,9 @@
     dlg.style.cssText = "max-width:560px;width:92vw;border:1px solid #333;border-radius:18px;background:#141417;color:#f2f2f2;padding:28px;font:16px/1.5 system-ui,sans-serif";
     dlg.innerHTML =
       '<h2 id="oc-thx-h" style="margin:0 0 8px">Thank you! You\u2019re in.</h2>' +
-      '<p style="margin:0 0 14px;color:#aaa">Your receipt is on its way' + (email ? " to <b>" + esc(email) + "</b>" : "") + ". Here\u2019s your license key:</p>" +
+      '<p style="margin:0 0 14px;color:#aaa">We\u2019ve emailed your receipt and key' + (email ? " to <b>" + esc(email) + "</b>" : "") + ". Here\u2019s your license key:</p>" +
       '<div id="oc-key" style="background:#0b0b0d;border:1px solid #333;border-radius:12px;padding:12px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;min-height:48px">Generating your key\u2026</div>' +
-      '<p style="margin:14px 0 0;color:#aaa;font-size:14px">Open Offline Captions, click <b>Activate</b>, and paste it. Keep it somewhere safe.</p>' +
+      '<p style="margin:14px 0 0;color:#aaa;font-size:14px">Open Offline Captions, click <b>Activate</b>, and paste it. Lost it later? <a href="/find-my-key/" style="color:#ffd60a">Find my key</a>.</p>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">' +
       '<button id="oc-copy" disabled style="padding:10px 16px;border-radius:10px;border:0;background:#ffd400;color:#111;font-weight:700;cursor:pointer">Copy key</button>' +
       '<button id="oc-close" style="padding:10px 16px;border-radius:10px;border:1px solid #444;background:transparent;color:#eee;cursor:pointer">Close</button></div>';
