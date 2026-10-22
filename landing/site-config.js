@@ -23,7 +23,7 @@ window.SITE_CONFIG = {
   DODO_ENV: "live",                      // "test" | "live" (live since 22 Oct 2026)
   DODO_PRODUCT_ID: "pdt_0NqHgqbBWJK6sRdkDTN66",      // founding price product (LIVE; test: pdt_0NqHgHlkCdJoQcI7JcVau)
   DODO_PRODUCT_ID_FULL: "pdt_0NqHgrTrKe3qpjk4Z1ce8", // full price product (LIVE; test: pdt_0NqHgIaCdNqdc31UjmT1l)
-  PREORDER: true,                        // desktop app not shipped: thank-you + key email say "pre-order, download link by email". Set false at desktop launch.
+  PREORDER: true,                        // Mac not shipped: thank-you + key email say "Windows: download now; Mac coming soon by email". Set false once Mac ships (and Worker var PREORDER="false").
   DODO_TIER: "founding",                 // which product the Buy buttons sell: "founding" | "full"
   /* Paddle (retired 20 Oct 2026, live account rejected). Kept for reference only; not loaded. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
