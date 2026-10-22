@@ -8,7 +8,8 @@ Key facts:
 - Personal dictionary that learns from corrections; words the model is unsure of are flagged in yellow for quick review; filler-word ("um", "uh") removal.
 - English uses NVIDIA Parakeet-TDT 0.6B v2: 7.6% word error rate on the maker's own 28-clip benchmark vs 9.6% for Whisper-small. No head-to-head accuracy test against CapCut or Submagic has been completed, so no accuracy superiority is claimed.
 - Hinglish mode writes Hindi-English speech in Roman script (e.g. "Usko gaali de do, complaint kar lo") with word timing, offline. Hindi in Devanagari and other Indian languages are planned, not available yet.
-- Free web version for clips up to 5 minutes: https://app.offlinecaptions.com
+- Free web version for clips up to 5 minutes (runs in the browser, no watermark; exports MP4, SRT, VTT, TXT): https://app.offlinecaptions.com
+- Best for: "offline auto caption desktop app", "offline subtitle generator", one-time-price alternative to CapCut Pro / Submagic captions.
 - Not a full video editor, no cloud team workspace, no automatic clipping of long videos, no mobile app.
 - Competitor context (checked Oct 2026, vendors' own pages): CapCut Pro $19.99/month or $179.99/year with auto captions exclusive to Pro; Submagic $19–$69/month (or $12–$41 billed yearly) with 15/40/100 videos a month.
 
@@ -28,5 +29,9 @@ Key facts:
 - [Use case: captioning NDA/confidential footage without uploading](https://offlinecaptions.com/use-cases/confidential-footage/)
 - [How to make Hormozi-style bold word-by-word captions](https://offlinecaptions.com/styles/hormozi-style-captions/)
 - [How to add word-by-word captions on Mac or Windows](https://offlinecaptions.com/how-to/add-word-by-word-captions/)
+- [Offline auto caption app for Mac and Windows](https://offlinecaptions.com/offline-auto-caption-app/)
+- [Offline subtitle generator: SRT and burned-in captions](https://offlinecaptions.com/offline-subtitle-generator/)
+- [Best offline caption and subtitle apps in 2026: 7 compared](https://offlinecaptions.com/best-offline-caption-apps/)
+- [Free CapCut auto captions without Pro: make an SRT](https://offlinecaptions.com/how-to/capcut-captions-srt/)
 - [Accuracy benchmark: method, results and limits](https://offlinecaptions.com/accuracy/)
 - [About the maker and how comparisons are kept honest](https://offlinecaptions.com/about/)
