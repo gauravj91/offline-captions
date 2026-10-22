@@ -11,3 +11,16 @@ export function buildSrt(lines) {
     .map((l, i) => `${i + 1}\n${ts(l.start)} --> ${ts(l.end)}\n${l.words.map((w) => w.text).join(' ')}\n`)
     .join('\n');
 }
+
+/** WebVTT (web players, HTML5 <track>, many editors). */
+export function buildVtt(lines) {
+  const vt = (t) => ts(t).replace(',', '.');
+  return 'WEBVTT\n\n' + lines
+    .map((l) => `${vt(l.start)} --> ${vt(l.end)}\n${l.words.map((w) => w.text).join(' ')}\n`)
+    .join('\n');
+}
+
+/** Plain-text transcript, one caption line per row. */
+export function buildTxt(lines) {
+  return lines.map((l) => l.words.map((w) => w.text).join(' ')).join('\n') + '\n';
+}
