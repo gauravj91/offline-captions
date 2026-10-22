@@ -12,7 +12,7 @@ window.SITE_CONFIG = {
 
   /* Sales switch. false = Pre-order buttons become "Get the launch price" and point to the
      launch waitlist. Set true only once DODO_ENV is "live" AND Gaurav has OK'd going on sale. */
-  SALES_OPEN: false,
+  SALES_OPEN: true,                      // opened 22 Oct 2026 with Gaurav's go-live OK
   WEB_APP_URL: "https://app.offlinecaptions.com",
 
   /* Google Analytics 4 (analytics.js): one web stream for the site + web app. "" = analytics off. */
@@ -20,9 +20,10 @@ window.SITE_CONFIG = {
 
   /* Dodo Payments checkout (checkout.js), since 22 Oct 2026. Test-mode ids: swap for live at launch
      (live ids in /workspace/work/dodo/live.json). Founding = $29 / ₹1,499 / €29 / £25; full = $39 / ₹1,999 / €39 / £35 / C$49 / A$59. */
-  DODO_ENV: "test",                      // "test" | "live"
-  DODO_PRODUCT_ID: "pdt_0NqHgHlkCdJoQcI7JcVau",      // founding price product (test mode)
-  DODO_PRODUCT_ID_FULL: "pdt_0NqHgIaCdNqdc31UjmT1l", // full price product (test mode)
+  DODO_ENV: "live",                      // "test" | "live" (live since 22 Oct 2026)
+  DODO_PRODUCT_ID: "pdt_0NqHgqbBWJK6sRdkDTN66",      // founding price product (LIVE; test: pdt_0NqHgHlkCdJoQcI7JcVau)
+  DODO_PRODUCT_ID_FULL: "pdt_0NqHgrTrKe3qpjk4Z1ce8", // full price product (LIVE; test: pdt_0NqHgIaCdNqdc31UjmT1l)
+  PREORDER: true,                        // desktop app not shipped: thank-you + key email say "pre-order, download link by email". Set false at desktop launch.
   DODO_TIER: "founding",                 // which product the Buy buttons sell: "founding" | "full"
   /* Paddle (retired 20 Oct 2026, live account rejected). Kept for reference only; not loaded. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
@@ -36,7 +37,7 @@ window.SITE_CONFIG = {
 
   PRICE_PREORDER: "$29",                 // founding pre-order
   PRICE_FULL: "$39",                     // after launch
-  PRICE_INR_PREORDER: "₹1,499",          // PROPOSAL — Gaurav's decision (see README). India founding price
+  PRICE_INR_PREORDER: "₹1,499",          // India founding price (confirmed by Gaurav 22 Oct 2026; revisit on feedback)
   PRICE_INR_FULL: "₹1,999",              // PROPOSAL — Gaurav's decision. India price after launch
   /* Shorts Studio (v2) — PLANNED, waitlist only, not for sale. Shown on home + hinglish pricing. */
   PRICE_SHORTS_BUNDLE: "$79",            // planned one-time bundle, captions included
