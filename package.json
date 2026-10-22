@@ -1,6 +1,6 @@
 {
   "name": "offline-captions",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Offline, one-time-purchase animated captions for short-form video (engine, CLI and desktop app)",
   "scripts": {
     "test": "node --test test/*.test.mjs server/test/*.test.mjs",
