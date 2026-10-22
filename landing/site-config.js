@@ -8,17 +8,23 @@
 window.SITE_CONFIG = {
   APP_NAME: "Offline Captions",          // working name
   SITE_URL: "https://offlinecaptions.com", // domain live since 19 Oct 2026
-  CHECKOUT_URL: "",                      // optional fallback link; Paddle overlay checkout (below) is used when configured
+  CHECKOUT_URL: "",                      // unused (Dodo static checkout links are built in checkout.js)
 
   /* Sales switch. false = Pre-order buttons become "Get the launch price" and point to the
-     launch waitlist, and Paddle isn't loaded. Set true only once PADDLE_ENV is "production". */
+     launch waitlist. Set true only once DODO_ENV is "live" AND Gaurav has OK'd going on sale. */
   SALES_OPEN: false,
   WEB_APP_URL: "https://app.offlinecaptions.com",
 
   /* Google Analytics 4 (analytics.js): one web stream for the site + web app. "" = analytics off. */
   GA_ID: "G-TSRZT7ZS0D",            // GA4 property 559796635 (account "Offline Captions", gauravj.0901@gmail.com)
 
-  /* Paddle checkout (checkout.js). Sandbox values: swap all four for live ones at launch. */
+  /* Dodo Payments checkout (checkout.js), since 22 Oct 2026. Test-mode ids: swap for live at launch
+     (live ids in /workspace/work/dodo/live.json). Founding = $29 / ₹1,499 / €29 / £25; full = $39 / ₹1,999 / €39 / £35 / C$49 / A$59. */
+  DODO_ENV: "test",                      // "test" | "live"
+  DODO_PRODUCT_ID: "pdt_0NqHgHlkCdJoQcI7JcVau",      // founding price product (test mode)
+  DODO_PRODUCT_ID_FULL: "pdt_0NqHgIaCdNqdc31UjmT1l", // full price product (test mode)
+  DODO_TIER: "founding",                 // which product the Buy buttons sell: "founding" | "full"
+  /* Paddle (retired 20 Oct 2026, live account rejected). Kept for reference only; not loaded. */
   PADDLE_ENV: "sandbox",                 // "sandbox" | "production"
   PADDLE_CLIENT_TOKEN: "test_614d5608c73d6ff75f543edf96c",
   PADDLE_PRICE_ID: "pri_01m5494svf188dx7n4yf7j4dm4",   // founding pre-order price (USD 29 / INR 1,499 / EUR 29 / GBP 25)
