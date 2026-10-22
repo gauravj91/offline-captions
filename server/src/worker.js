@@ -11,6 +11,7 @@
 //   ALLOWED_ORIGINS       comma-separated origins allowed to call /api/* from a browser ("*" = any)
 //   LICENSE_PUBLIC_KEY    base64url raw Ed25519 public key (also baked into the desktop app)
 //   DODO_ENV              "test" | "live"
+//   PREORDER              "false" once the desktop app ships (key emails then say "open the app"); default pre-order copy
 //   DODO_PRODUCTS         JSON {"<product_id>": "founding"|"full", ...}
 // Secrets
 //   DODO_WEBHOOK_SECRET   whsec_… signing key of the Dodo TEST-mode webhook endpoint (Standard Webhooks)
@@ -180,21 +181,25 @@ async function indexEmail(env, email, lid) {
 // ---------- email (Resend) ----------
 const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const TIER_NAME = { founding: "Founding license", full: "Full license" };
-export function keyEmail(recs, kind) {
+export function keyEmail(recs, kind, preorder = false) {
   const many = recs.length > 1;
-  const subject = kind === "purchase" ? "Your Offline Captions license key" : many ? "Your Offline Captions license keys" : "Your Offline Captions license key";
-  const intro = kind === "purchase" ? "Thanks for buying Offline Captions. Here's your license key." : `You asked us to resend your license key${many ? "s" : ""}.`;
+  const subject = kind === "purchase" ? (preorder ? "Your Offline Captions pre-order and license key" : "Your Offline Captions license key") : many ? "Your Offline Captions license keys" : "Your Offline Captions license key";
+  const intro = kind === "purchase" ? (preorder ? "Thanks for pre-ordering Offline Captions at the founding price. Here's your license key." : "Thanks for buying Offline Captions. Here's your license key.") : `You asked us to resend your license key${many ? "s" : ""}.`;
+  const pre = preorder ? "The desktop app for Mac and Windows isn't out yet. We'll email you the download link at this address the day it's ready. Keep this key: you'll paste it in to activate. Until then, the free web version works now: https://app.offlinecaptions.com" : "";
+  const preHtml = preorder ? `<p>The desktop app for Mac and Windows isn't out yet. We'll email you the download link at this address the day it's ready. Keep this key: you'll paste it in to activate. Until then, the <a href="https://app.offlinecaptions.com">free web version</a> works now.</p>` : "";
   const blocks = recs.map((r) => ({ name: TIER_NAME[r.tier] || "License", key: r.key, date: (r.created || "").slice(0, 10) }));
   const text = [intro, "", ...blocks.flatMap((b) => [`${b.name}${b.date ? ` (bought ${b.date})` : ""}:`, b.key, ""]),
-    "To activate: open Offline Captions, click Activate, and paste the key.",
-    "Get the app: https://offlinecaptions.com/", "Find your key again any time: https://offlinecaptions.com/find-my-key/",
+    ...(preorder ? [pre, ""] : ["To activate: open Offline Captions, click Activate, and paste the key.", "Get the app: https://offlinecaptions.com/"]),
+    "Find your key again any time: https://offlinecaptions.com/find-my-key/",
+    ...(kind === "purchase" ? ["Changed your mind? Full refund within 14 days: just reply to this email."] : []),
     "", "Questions? Just reply to this email.", "", "Offline Captions"].join("\n");
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;color:#111;line-height:1.5">
 <h2 style="margin:0 0 12px">Offline Captions</h2><p>${escHtml(intro)}</p>
 ${blocks.map((b) => `<p style="margin:16px 0 6px"><b>${escHtml(b.name)}</b>${b.date ? ` <span style="color:#666">(bought ${b.date})</span>` : ""}</p>
 <pre style="white-space:pre-wrap;word-break:break-all;background:#f4f4f4;border:1px solid #ddd;border-radius:8px;padding:12px;font-size:13px">${escHtml(b.key)}</pre>`).join("")}
-<p>To activate: open Offline Captions, click <b>Activate</b>, and paste the key.</p>
-<p><a href="https://offlinecaptions.com/">Get the app</a> · <a href="https://offlinecaptions.com/find-my-key/">Find your key again</a></p>
+${preorder ? preHtml : `<p>To activate: open Offline Captions, click <b>Activate</b>, and paste the key.</p>`}
+<p>${preorder ? "" : `<a href="https://offlinecaptions.com/">Get the app</a> · `}<a href="https://offlinecaptions.com/find-my-key/">Find your key again</a></p>
+${kind === "purchase" ? `<p style="color:#666">Changed your mind? Full refund within 14 days: just reply to this email.</p>` : ""}
 <p style="color:#666">Questions? Just reply to this email.</p></div>`;
   return { subject, text, html };
 }
@@ -210,7 +215,7 @@ async function sendMail(env, to, { subject, text, html }) {
 async function emailNewLicense(env, rec) {
   if (!rec.email) return;
   try {
-    const res = await sendMail(env, rec.email, keyEmail([rec], "purchase"));
+    const res = await sendMail(env, rec.email, keyEmail([rec], "purchase", env.PREORDER !== "false"));
     if (res.ok) { const cur = await getJSON(env, `lic:${rec.lid}`); cur.emailed_at = new Date().toISOString(); await putJSON(env, `lic:${rec.lid}`, cur); }
   } catch (e) { console.error("email", e); }
 }
@@ -228,7 +233,7 @@ async function handleRecover(req, env) {
     lids = (await store(env).list("lic:")).map(([, v]) => JSON.parse(v)).filter((r) => (r.email || "").toLowerCase() === email).map((r) => r.lid);
   const recs = [];
   for (const lid of lids) { const r = await getJSON(env, `lic:${lid}`); if (r && r.status === "active") recs.push(r); }
-  if (recs.length) await sendMail(env, email, keyEmail(recs, "recover"));
+  if (recs.length) await sendMail(env, email, keyEmail(recs, "recover", env.PREORDER !== "false"));
   return json({ ok: true });
 }
 
@@ -237,9 +242,11 @@ async function handleDodoWebhook(req, env) {
   const id = req.headers.get("webhook-id"), ts = req.headers.get("webhook-timestamp");
   const sigH = req.headers.get("webhook-signature");
   // Test-mode and live-mode endpoints each have their own signing key; accept either.
-  if (!(await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET, id, ts, sigH, raw)) &&
-      !(await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET_LIVE, id, ts, sigH, raw)))
-    return json({ error: "bad_signature" }, 401);
+  const isLive = await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET_LIVE, id, ts, sigH, raw);
+  const isTest = !isLive && (await verifyStandardWebhook(env.DODO_WEBHOOK_SECRET, id, ts, sigH, raw));
+  if (!isLive && !isTest) return json({ error: "bad_signature" }, 401);
+  // Once live, test-mode payments must not mint keys that work in the real app.
+  if (isTest && env.DODO_ENV === "live") return json({ ok: true, result: "test_mode_ignored" });
   if (await store(env).get(`evt:${id}`)) return json({ ok: true, duplicate: true });
   const evt = JSON.parse(raw); const d = evt.data || {};
   let products = {}; try { products = JSON.parse(env.DODO_PRODUCTS || "{}"); } catch {}
