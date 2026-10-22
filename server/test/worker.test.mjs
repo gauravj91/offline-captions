@@ -111,3 +111,29 @@ test("price by country", () => {
   assert.equal(priceFor("IN").founding, "₹1,499"); assert.equal(priceFor("FR").currency, "EUR");
   assert.equal(priceFor("CA").founding_currency, "USD"); assert.equal(priceFor(undefined).full, "$39");
 });
+
+test("dodo: key emailed on purchase (once) and find-my-key resends active keys only", async () => {
+  const sent = [];
+  env.RESEND_API_KEY = "re_test";
+  env.FETCH = async (url, init) => { sent.push({ url, body: JSON.parse(init.body) }); return new Response("{}", { status: 200 }); };
+  await dhook({ type: "payment.succeeded", data: { payment_id: "pay_m1", total_amount: 2900, customer: { email: "Mail@Buyer.com" }, product_cart: [{ product_id: "pdt_found" }] } });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].url, "https://api.resend.com/emails");
+  assert.deepEqual(sent[0].body.to, ["mail@buyer.com"]);
+  assert.match(sent[0].body.text, /OC1\./);
+  await dhook({ type: "payment.succeeded", data: { payment_id: "pay_m1", customer: { email: "mail@buyer.com" }, product_cart: [{ product_id: "pdt_found" }] } });
+  assert.equal(sent.length, 1); // same payment again: no second email
+  await dhook({ type: "payment.succeeded", data: { payment_id: "pay_m2", total_amount: 3900, customer: { email: "mail@buyer.com" }, product_cart: [{ product_id: "pdt_full" }] } });
+  await dhook({ type: "refund.succeeded", data: { payment_id: "pay_m2", amount: 3900, is_partial: false } });
+  sent.length = 0;
+  const r = await post("/api/recover", { email: "MAIL@buyer.com" });
+  assert.equal(r.status, 200); assert.deepEqual(await r.json(), { ok: true });
+  assert.equal(sent.length, 1);
+  assert.equal((sent[0].body.text.match(/OC1\./g) || []).length, 1); // refunded key left out
+  await post("/api/recover", { email: "mail@buyer.com" });
+  assert.equal(sent.length, 1); // rate limited
+  assert.deepEqual(await (await post("/api/recover", { email: "nobody@x.com" })).json(), { ok: true });
+  assert.equal(sent.length, 1);
+  assert.equal((await post("/api/recover", { email: "bad" })).status, 400);
+  delete env.RESEND_API_KEY; delete env.FETCH;
+});
