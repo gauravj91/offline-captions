@@ -450,6 +450,51 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     </div>
   </section>
 
+  <!-- SAVINGS -->
+  <section id="savings" aria-labelledby="sav-h">
+    <div class="wrap">
+      <span class="eyebrow">What you save</span>
+      <h2 id="sav-h">Pays for itself in under two months</h2>
+      <p class="lede">CapCut Pro costs $19.99 a month just to keep auto-captions. Move the sliders to see your own numbers.</p>
+      <div class="card sav-card">
+        <label class="sav-row"><span>Videos you post a month: <strong id="sav-v-out">10</strong></span>
+          <input type="range" id="sav-v" min="1" max="60" value="10" aria-describedby="sav-note"></label>
+        <label class="sav-row"><span>Minutes you spend captioning one video by hand: <strong id="sav-m-out">20</strong></span>
+          <input type="range" id="sav-m" min="5" max="90" step="5" value="20" aria-describedby="sav-note"></label>
+        <div class="sav-out">
+          <div><span class="sav-big hl" id="sav-money">$211</span><span class="muted small">kept in your first year vs CapCut Pro</span></div>
+          <div><span class="sav-big hl" id="sav-hours">34 h</span><span class="muted small">back each year</span></div>
+        </div>
+        <p class="small muted" id="sav-note">Money: CapCut Pro at $19.99/month (list price, checked October 2026) for 12 months, minus our <span data-cfg="PRICE_PREORDER">$29</span> founding price. Time: your minutes by hand, minus about 3 minutes per video to check and fix the app's captions. Your own numbers will differ.</p>
+      </div>
+    </div>
+  </section>
+  <style>
+    .sav-card{padding:22px;margin-top:22px;max-width:680px}
+    .sav-row{display:block;margin-bottom:18px}
+    .sav-row span{display:block;margin-bottom:6px}
+    .sav-row input{width:100%;accent-color:var(--accent)}
+    .sav-out{display:flex;gap:28px;flex-wrap:wrap;margin:8px 0 14px}
+    .sav-out div{display:flex;flex-direction:column}
+    .sav-big{font-size:2.2rem;font-weight:800;line-height:1.1}
+  </style>
+  <script>
+  (function(){
+    var v=document.getElementById('sav-v'),m=document.getElementById('sav-m');
+    if(!v||!m)return;
+    function price(){var p=((window.SITE_CONFIG||{}).PRICE_PREORDER||'$29').replace(/[^0-9.]/g,'');return parseFloat(p)||29;}
+    function upd(){
+      var vid=+v.value,min=+m.value,saved=Math.round(19.99*12-price());
+      var hrs=Math.max(0,Math.round(vid*Math.max(0,min-3)*12/60));
+      document.getElementById('sav-v-out').textContent=vid;
+      document.getElementById('sav-m-out').textContent=min;
+      document.getElementById('sav-money').textContent='$'+saved;
+      document.getElementById('sav-hours').textContent=hrs+' h';
+    }
+    v.addEventListener('input',upd);m.addEventListener('input',upd);upd();
+  })();
+  </script>
+
   <!-- PRICING -->
   <section id="pricing" aria-labelledby="price-h">
     <div class="wrap">
