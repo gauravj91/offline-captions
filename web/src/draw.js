@@ -75,7 +75,10 @@ export function drawCaption(ctx, lines, st, t, W, H) {
   const m = ctx.measureText('Hg');
   const asc = m.fontBoundingBoxAscent ?? fs * 0.8, desc = m.fontBoundingBoxDescent ?? fs * 0.2;
   for (const it of items) { ctx.font = fontOf(st, it.size); it.w = ctx.measureText(it.text).width; }
-  const maxW = W * 0.84;
+  // Side margins: 8% each, unless st.insetR asks for a wider right margin
+  // (Fit to safe zone keeps lines clear of the TikTok/Reels/Shorts button column).
+  const left = W * 0.08, right = W - W * Math.max(0.08, st.insetR || 0);
+  const maxW = right - left;
   const rows = [];
   let row = [], rw = 0;
   for (const it of items) {
@@ -92,7 +95,7 @@ export function drawCaption(ctx, lines, st, t, W, H) {
   const ow = Math.max(0, st.outlineW * H);
   const drop = (st.shadow || 0) * H;
   for (const r of rows) {
-    let x = (W - r.w) / 2;
+    let x = left + (maxW - r.w) / 2;
     for (const it of r.items) {
       const scale = it.size / fs;
       const base = y + (r.h - (asc + desc) * scale) / 2 + asc * scale;
