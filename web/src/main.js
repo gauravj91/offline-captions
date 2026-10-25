@@ -15,13 +15,23 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const FILLERS = new Set(['um', 'uh', 'erm', 'uhm', 'hmm', 'mm', 'ah']); // same list as src/segment.mjs
 const isFiller = (w) => FILLERS.has(w.text.toLowerCase().replace(/[^a-z]/g, ''));
+// Approximate UI areas of each app on a 9:16 video, as fractions of the frame.
+// Only used for the preview guide and "Fit to safe zone"; never drawn into exports.
+const PLATFORMS = {
+  tiktok: { name: 'TikTok', top: 0.10, right: 0.15, bottom: 0.25 },
+  reels:  { name: 'Reels',  top: 0.09, right: 0.14, bottom: 0.22 },
+  shorts: { name: 'Shorts', top: 0.08, right: 0.15, bottom: 0.20 },
+};
+const store = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 const STYLE_NOTES = { bold: 'All caps, yellow pop', clean: 'Sentence case, pill', punch: 'Word by word', reveal: 'Builds as spoken' };
 
 const state = {
   file: null, buf: null, meta: null, lang: 'en', model: CFG.DEFAULT_MODEL,
   device: null, gpu: false, cached: {},
   project: null, lines: [], editing: null, fillers: true,
-  style: { style: 'bold', scale: 1, position: null },
+  style: { style: 'bold', scale: 1, position: null, insetR: null },
+  platform: PLATFORMS[store.get('oc.platform')] ? store.get('oc.platform') : 'tiktok',
+  safeOn: store.get('oc.safe') === '1',
   busy: false, exporting: false, timings: {},
 };
 window.__timings = state.timings; // read by the headless test
@@ -36,11 +46,12 @@ const bucket = (sec) => (sec <= 15 ? '0-15s' : sec <= 30 ? '15-30s' : sec <= 60 
 const upsellUrl = () => realLink(CFG.UPSELL_URL) || realLink(SITE.CHECKOUT_URL) || realLink(SITE.SITE_URL);
 const limLabel = (long) => { const s = CFG.MAX_SECONDS; return s >= 60 && s % 60 === 0 ? `${s / 60} ${long ? (s === 60 ? 'minute' : 'minutes') : 'min'}` : `${s} ${long ? 'seconds' : 's'}`; };
 const endSec = () => Math.min(state.meta?.duration || 0, CFG.MAX_SECONDS);
+const touchFirst = () => matchMedia('(pointer: coarse)').matches;
 const baseName = (n) => n.replace(/\.[^.]+$/, '');
 
 function currentStyle() {
   const p = resolveStyle(state.style.style);
-  return { ...p, size: +(p.size * state.style.scale).toFixed(4), position: state.style.position ?? p.position };
+  return { ...p, size: +(p.size * state.style.scale).toFixed(4), position: state.style.position ?? p.position, ...(state.style.insetR ? { insetR: state.style.insetR } : {}) };
 }
 
 // ---------------- desktop upsell (one dialog, no tricks) ----------------
@@ -142,6 +153,10 @@ async function setFile(file) {
   const note = $('#limit-note');
   const long = meta && meta.duration > CFG.MAX_SECONDS + 0.5;
   const big = meta && Math.min(meta.width, meta.height) > CFG.MAX_EXPORT_SHORT_SIDE;
+  if (!meta) {
+    showErr('This browser can\'t open this video, so it can\'t caption it. iPhone videos in "High Efficiency" (HEVC) only play in some browsers: try Safari or Chrome, or set Camera > Formats > Most Compatible and record again. MP4 (H.264) works everywhere.');
+    track('video_unreadable', { ext: (file.name.split('.').pop() || '').toLowerCase().slice(0, 5) });
+  }
   note.hidden = !(long || big);
   if (long || big) {
     const parts = [];
@@ -158,6 +173,7 @@ async function setFile(file) {
 function clearFile() {
   if (state.busy) return;
   state.file = null; state.meta = null; state.project = null;
+  hideErr();
   $('#clip').hidden = true; $('#dropzone').hidden = false; $('#limit-note').hidden = true;
   updateStart();
 }
@@ -176,10 +192,10 @@ dz.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') 
 
 function updateStart() {
   const btn = $('#btn-start');
-  btn.disabled = !state.file || state.busy;
+  btn.disabled = !state.file || state.busy || !!state.meta?.unknown;
   const cached = state.cached[state.model];
   btn.textContent = !state.file ? 'Transcribe' : cached ? 'Transcribe' : 'Download model & transcribe';
-  $('#start-hint').textContent = !state.file ? 'Add a video to begin.' : state.busy ? 'Working in this tab…' : 'Ready. Your video stays on this device.';
+  $('#start-hint').textContent = !state.file ? 'Add a video to begin.' : state.meta?.unknown ? 'This video can\'t be opened here.' : state.busy ? 'Working in this tab…' : 'Ready. Your video stays on this device.';
 }
 function showErr(msg) { const e = $('#err'); e.textContent = msg; e.hidden = false; }
 function hideErr() { $('#err').hidden = true; }
@@ -224,7 +240,7 @@ async function start() {
     $('#dl-text').textContent = 'Reading the audio from your video…'; $('#dl-pct').textContent = '';
     state.ab = await state.file.arrayBuffer();
     state.buf = await decodeAudio(state.ab);
-    if (!state.buf) throw new Error('No audio could be read from this video. Is it silent, or in a format this browser cannot decode? Try an MP4 (H.264/AAC).');
+    if (!state.buf) throw new Error('No audio could be read from this video. Is it silent, or in a format this browser cannot decode (some iPhone HEVC/.mov clips)? Try an MP4 (H.264/AAC).');
     const audio = await toWhisperAudio(state.buf, endSec() || state.buf.duration);
     T.audioMs = Math.round(performance.now() - t0);
 
@@ -306,6 +322,7 @@ function openReview() {
   $('#ex-res').textContent = `MP4 ${o.width}×${o.height}${o.scaled ? ' (1080p)' : ''}${state.meta.duration > CFG.MAX_SECONDS + 0.5 ? ` · first ${limLabel(false)}` : ''}`;
   $('#ex-done').hidden = true; $('#upsell-after').hidden = true;
   $('#words').replaceChildren(); $('#review-note').textContent = '';
+  state.lastMp4 = null;
   fitFrame();
 }
 $('#btn-new').addEventListener('click', () => { if (state.busy || state.exporting) return; video.pause(); clearFile(); showScreen('import'); });
@@ -323,6 +340,7 @@ function fitFrame() {
   overlay.width = Math.round(Math.floor(w * s) * dpr);
   overlay.height = Math.round(Math.floor(h * s) * dpr);
   paint();
+  renderSafe();
 }
 new ResizeObserver(fitFrame).observe($('#stage'));
 
@@ -363,12 +381,13 @@ function updateReviewNote() {
   const ws = state.project?.words || [];
   const flagged = ws.filter((w) => w.review).length;
   $('#flag-count').textContent = flagged;
+  $('.sheet-title').textContent = flagged ? `Edit words & style · ${flagged} to check` : 'Edit words & style';
   $('#btn-next-flag').disabled = !flagged;
   const deeper = flagged && state.model === 'base' && !state.busy && !ws.some((w) => w.edited)
     && flagged / ws.length > CFG.DEEPER_PASS_RATIO;
   $('#review-note').innerHTML = (flagged
-    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: unsure words. Click a word to hear it and fix it; press Enter to keep it.`
-    : `All ${ws.length} words look good. Click any word to jump there or edit it.`)
+    ? `<b>${flagged}</b> of ${ws.length} words are highlighted: unsure words. ${touchFirst() ? 'Tap' : 'Click'} a word to hear it and fix it; press Enter to keep it.`
+    : `All ${ws.length} words look good. ${touchFirst() ? 'Tap' : 'Click'} any word to jump there or edit it.`)
     + (deeper ? ' <button class="link" id="btn-deeper">Hard audio? Run a deeper pass</button>' : '');
   if (deeper) $('#btn-deeper').addEventListener('click', () => { track('deeper_pass_click', {}); state.model = 'small'; refreshModel().then(start); });
 }
@@ -491,6 +510,59 @@ $$('.tabs button').forEach((b) => b.addEventListener('click', () => {
   $('#tab-style').hidden = b.dataset.tab !== 'style';
 }));
 
+// bottom sheet (phones): the preview stays big, the editor folds away
+$('#sheet-head').addEventListener('click', () => {
+  const open = !document.body.classList.contains('sheet-open');
+  document.body.classList.toggle('sheet-open', open);
+  $('#sheet-head').setAttribute('aria-expanded', String(open));
+});
+
+// ---------------- platform safe zones ----------------
+function safeCheck() {
+  const z = PLATFORMS[state.platform], st = currentStyle();
+  const middle = st.position >= 0.45 && st.position <= 0.55;
+  return { z, low: !middle && st.position < z.bottom - 0.001, side: (st.insetR || 0) < z.right - 0.001 };
+}
+function renderSafe() {
+  const box = $('#safe');
+  const z = PLATFORMS[state.platform];
+  box.style.setProperty('--t', `${z.top * 100}%`);
+  box.style.setProperty('--r', `${z.right * 100}%`);
+  box.style.setProperty('--b', `${z.bottom * 100}%`);
+  box.hidden = !state.safeOn;
+  $('#btn-safe').setAttribute('aria-pressed', String(state.safeOn));
+  $('#btn-safe').textContent = state.safeOn ? `${z.name} zones` : 'Safe zones';
+  $('#chk-safe').checked = state.safeOn;
+  $$('#seg-platform button').forEach((b) => b.classList.toggle('on', b.dataset.p === state.platform));
+  const bar = $('#safe-bar');
+  bar.hidden = !state.safeOn || !state.project;
+  if (bar.hidden) return;
+  const c = safeCheck();
+  const ok = !c.low && !c.side;
+  bar.classList.toggle('ok', ok);
+  $('#safe-msg').textContent = c.low ? `Captions sit under ${z.name}'s caption area.`
+    : c.side ? `Long lines can run under ${z.name}'s buttons.`
+    : `✓ Captions are clear of ${z.name}'s buttons.`;
+  $('#btn-fit').hidden = ok;
+}
+function setSafe(on) { state.safeOn = on; store.set('oc.safe', on ? '1' : '0'); renderSafe(); fitFrame(); }
+function fitToSafe() {
+  const c = safeCheck(), st = currentStyle();
+  if (c.low) state.style.position = Math.min(0.6, +(c.z.bottom + 0.02).toFixed(2));
+  else if (state.style.position == null) state.style.position = st.position;
+  state.style.insetR = +(c.z.right + 0.01).toFixed(2);
+  track('safe_fit', { platform: state.platform, moved: c.low });
+  syncStyle();
+}
+$('#btn-safe').addEventListener('click', () => setSafe(!state.safeOn));
+$('#chk-safe').addEventListener('change', (e) => setSafe(e.target.checked));
+$('#btn-fit').addEventListener('click', fitToSafe);
+$$('#seg-platform button').forEach((b) => b.addEventListener('click', () => {
+  state.platform = b.dataset.p; store.set('oc.platform', state.platform);
+  track('platform_change', { platform: state.platform });
+  if (!state.safeOn) setSafe(true); else renderSafe();
+}));
+
 // ---------------- style ----------------
 function renderPresets() {
   const box = $('#presets');
@@ -503,7 +575,7 @@ function renderPresets() {
     b.querySelector('b').textContent = name;
     b.querySelector('span').textContent = STYLE_NOTES[name] || '';
     drawSample(b.querySelector('canvas'), st);
-    b.addEventListener('click', () => { track('style_change', { style: name }); state.style = { style: name, scale: state.style.scale, position: null }; syncStyle(); });
+    b.addEventListener('click', () => { track('style_change', { style: name }); state.style = { style: name, scale: state.style.scale, position: null, insetR: state.style.insetR }; syncStyle(); });
     return b;
   }));
 }
@@ -516,10 +588,11 @@ function syncStyle() {
   $('#pos-val').textContent = middle ? 'Centred' : `${Math.round(st.position * 100)}% from bottom`;
   $('#size-val').textContent = `${Math.round(state.style.scale * 100)}%`;
   rebuildLines();
+  renderSafe();
 }
 $('#rng-pos').addEventListener('input', (e) => { state.style.position = +e.target.value; syncStyle(); });
 $('#rng-size').addEventListener('input', (e) => { state.style.scale = +e.target.value; syncStyle(); });
-$('#btn-reset-style').addEventListener('click', () => { state.style.scale = 1; state.style.position = null; syncStyle(); });
+$('#btn-reset-style').addEventListener('click', () => { state.style.scale = 1; state.style.position = null; state.style.insetR = null; syncStyle(); });
 
 // ---------------- export ----------------
 function download(blob, name) {
@@ -546,13 +619,47 @@ for (const [id, fmt, build, mime] of [['#btn-vtt', 'vtt', buildVtt, 'text/vtt'],
   });
 }
 
+// Spoken text as one paragraph (fillers dropped when the toggle is on), for the post caption.
+function spokenText() { return state.lines.map((l) => l.words.map((w) => w.text).join(' ')).join(' ').replace(/\s+/g, ' ').trim(); }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* older browsers / no permission */ }
+  const ta = Object.assign(document.createElement('textarea'), { value: text });
+  ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+  let ok = false; try { ok = document.execCommand('copy'); } catch {}
+  ta.remove(); return ok;
+}
+$('#btn-copy').addEventListener('click', async () => {
+  if (!state.project) return;
+  if (state.editing) commitEdit(true);
+  const ok = await copyText(spokenText());
+  track('copy_text', { ok, words: state.lines.reduce((n, l) => n + l.words.length, 0) });
+  const b = $('#btn-copy');
+  b.textContent = ok ? 'Copied ✓' : 'Copy failed';
+  setTimeout(() => { b.textContent = 'Copy text'; }, 1800);
+});
+const mp4File = () => (state.lastMp4 ? new File([state.lastMp4], `${baseName(state.file.name)}.captioned.mp4`, { type: 'video/mp4' }) : null);
+function canShareFile(f) { try { return !!(f && navigator.canShare && navigator.share && navigator.canShare({ files: [f] })); } catch { return false; } }
+$('#btn-share').addEventListener('click', async () => {
+  const f = mp4File();
+  if (!f) return;
+  try {
+    await navigator.share({ files: [f], title: 'Captioned video' });
+    track('share_complete', {});
+  } catch (e) {
+    if (e?.name === 'AbortError') return; // user closed the share sheet
+    track('share_error', { message: String(e?.message || e).slice(0, 90) });
+    download(state.lastMp4, f.name); // fallback: normal download
+  }
+});
+
 async function exportVideo() {
   if (!state.project || state.exporting) return;
   if (state.editing) commitEdit(true);
   state.exporting = true;
   video.pause();
   track('export_start', { style: state.style.style, scale: state.style.scale, moved: !!state.style.position, edited_words: state.project.words.filter((w) => w.edited).length });
-  $('#btn-export').disabled = true; $('#btn-srt').disabled = true; $('#btn-vtt').disabled = true; $('#btn-txt').disabled = true;
+  ['#btn-export', '#btn-srt', '#btn-vtt', '#btn-txt', '#btn-copy'].forEach((id) => { $(id).disabled = true; });
   $('#ex').hidden = false; $('#ex-done').hidden = true; $('#upsell-after').hidden = true;
   $('#ex-text').textContent = 'Rendering in this tab…';
   const onProgress = (f) => { const p = Math.round(f * 100); $('#ex-bar').style.width = `${p}%`; $('#ex-pct').textContent = `${p}%`; };
@@ -566,21 +673,30 @@ async function exportVideo() {
     Object.assign(state.timings, { exportMs: r.ms, exportFrames: r.frames, exportCodec: r.codec, exportAudio: r.audio, exportSize: `${r.width}x${r.height}`, exportPath: r.path, exportBytes: r.blob.size });
     state.lastMp4 = r.blob;
     const name = `${baseName(state.file.name)}.captioned.mp4`;
-    const href = download(r.blob, name);
+    // Phones that can share files: no surprise download, a Save / Share button instead
+    // (share sheet -> Save Video to the gallery, or straight to TikTok/Instagram/YouTube).
+    const share = canShareFile(mp4File());
+    const quiet = share && touchFirst();
+    const href = quiet ? URL.createObjectURL(r.blob) : download(r.blob, name);
     $('#ex').hidden = true;
     $('#ex-done').hidden = false;
-    $('#ex-done-text').textContent = `Saved ${name} · ${r.width}×${r.height} · ${fmtMB(r.blob.size)} · ${(r.ms / 1000).toFixed(1)} s`;
+    $('#ex-done-text').textContent = `${quiet ? 'Ready' : 'Saved'}: ${name} · ${r.width}×${r.height} · ${fmtMB(r.blob.size)} · ${(r.ms / 1000).toFixed(1)} s`;
+    $('#btn-share').hidden = !share;
     const again = $('#ex-again'); again.href = href; again.download = name;
+    again.textContent = quiet ? 'Download' : 'Download again';
     track('export_complete', { style: state.style.style, size: `${r.width}x${r.height}`, export_ms: r.ms, codec: r.codec, mb: +(r.blob.size / 1e6).toFixed(1) });
     showAfterUpsell();
   } catch (e) {
     console.error(e);
     track('export_error', { message: String(e.message || e).slice(0, 90) });
-    $('#ex-text').textContent = `Export failed: ${e.message || e}. The SRT still works.`;
+    const msg = String(e.message || e);
+    $('#ex-text').textContent = /decod|codec|hevc|hvc1|hev1|not supported/i.test(msg) && !/encode/i.test(msg)
+      ? `Export failed: this browser can't decode this video's format (often iPhone HEVC). SRT, VTT, TXT and Copy text still work. ${msg}`
+      : `Export failed: ${msg}. The SRT still works.`;
     state.timings.exportError = String(e.message || e);
   } finally {
     state.exporting = false;
-    $('#btn-export').disabled = false; $('#btn-srt').disabled = false; $('#btn-vtt').disabled = false; $('#btn-txt').disabled = false;
+    ['#btn-export', '#btn-srt', '#btn-vtt', '#btn-txt', '#btn-copy'].forEach((id) => { $(id).disabled = false; });
   }
 }
 $('#btn-export').addEventListener('click', exportVideo);
@@ -613,6 +729,18 @@ function showAfterUpsell() {
   await Promise.all([document.fonts.load('40px "Anton"'), document.fonts.load('40px "Montserrat Thin ExtraBold"')]).catch(() => {});
   renderPresets();
   syncStyle();
+  renderSafe();
   await refreshModel();
-  window.__ui = { state, setFile, start, exportVideo, editWord, commitEdit, nextFlag, seek, showScreen, video, srt: () => buildSrt(state.lines) };
+  window.__ui = {
+    state, setFile, start, exportVideo, editWord, commitEdit, nextFlag, seek, showScreen, video, srt: () => buildSrt(state.lines),
+    fitToSafe, setSafe, spokenText,
+    // Test hook (screenshots): open the review screen with a ready-made transcript, skipping the model.
+    loadProject: async (words) => {
+      state.ab = await state.file.arrayBuffer();
+      state.buf = await decodeAudio(state.ab);
+      openReview();
+      state.project = { words: flagForReview(words, CFG.REVIEW_THRESHOLD), duration: endSec(), width: state.meta.width, height: state.meta.height, engine: 'test' };
+      renderWords(); rebuildLines(); renderSafe();
+    },
+  };
 })();
