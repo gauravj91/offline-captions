@@ -7,6 +7,13 @@
 <meta name="description" content="Drop a short video, get word-by-word animated captions plus SRT, VTT or TXT. Transcription and rendering run in your browser: your video never leaves your device.">
 <meta name="theme-color" content="#0b0b0d">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.googletagmanager.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.google-analytics.com https://www.googletagmanager.com; media-src 'self' blob:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Offline Captions">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -31,10 +38,10 @@
 
     <div class="dropzone" id="dropzone" tabindex="0">
       <div class="dz-icon">⬇</div>
-      <div class="dz-title">Drop a video here</div>
-      <div class="dz-sub">MP4 or MOV works best (WebM too). One clip at a time on the web.</div>
-      <button class="btn" id="btn-pick">Choose a video</button>
-      <input type="file" id="file" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden>
+      <div class="dz-title"><span class="dz-desk">Drop a video here</span><span class="dz-phone">Add your video</span></div>
+      <div class="dz-sub"><span class="dz-desk">MP4 or MOV works best (WebM too). One clip at a time on the web.</span><span class="dz-phone">Pick a clip from your camera roll. MP4 or MOV, one at a time.</span></div>
+      <button class="btn primary lg" id="btn-pick">Choose a video</button>
+      <input type="file" id="file" accept="video/*" hidden>
     </div>
 
     <section class="qi big" id="clip" hidden>
@@ -92,6 +99,12 @@
       <div class="frame" id="frame">
         <video id="video" playsinline preload="auto"></video>
         <canvas class="overlay" id="overlay"></canvas>
+        <!-- Safe-zone guide: plain DOM on top of the preview, never drawn into the exported video. -->
+        <div class="safe" id="safe" hidden aria-hidden="true">
+          <div class="sz sz-top"><span>Top bar</span></div>
+          <div class="sz sz-right"><span>Buttons</span></div>
+          <div class="sz sz-bottom"><span>Caption &amp; username</span></div>
+        </div>
         <div class="frame-busy" id="frame-busy" hidden><div class="spinner"></div><div id="frame-busy-text">Transcribing…</div><div class="bar busy-bar"><i id="busy-bar"></i></div></div>
       </div>
     </div>
@@ -101,10 +114,17 @@
       <input type="range" id="scrub" min="0" max="1000" value="0" class="scrub" aria-label="Seek">
       <span class="time" id="time-dur">0:00</span>
       <span class="ratio" id="ratio"></span>
+      <button class="chip" id="btn-safe" aria-pressed="false" title="Show where TikTok, Reels or Shorts put their buttons">Safe zones</button>
+    </div>
+    <div class="safe-bar" id="safe-bar" hidden>
+      <span id="safe-msg"></span>
+      <button class="btn sm primary" id="btn-fit">Fit to safe zone</button>
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="panel">
+    <button class="sheet-head" id="sheet-head" aria-expanded="false" aria-controls="sheet-body"><span class="grab"></span><span class="sheet-title">Edit words &amp; style</span><span class="sheet-chev">▴</span></button>
+    <div class="sheet-body" id="sheet-body">
     <div class="tabs">
       <button data-tab="transcript" class="on">Transcript</button>
       <button data-tab="style">Style</button>
@@ -121,6 +141,14 @@
     </div>
 
     <div class="tab" id="tab-style" hidden>
+      <div class="field platform">
+        <label>Posting to</label>
+        <div class="seg" id="seg-platform" role="group" aria-label="Platform">
+          <button data-p="tiktok" class="on">TikTok</button><button data-p="reels">Reels</button><button data-p="shorts">Shorts</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="chk-safe"><span></span>Show safe zones on the preview (never in the export)</label>
+        <div class="hint">Approximate areas where the app's buttons and caption text sit on a 9:16 video.</div>
+      </div>
       <div class="presets" id="presets"></div>
       <div class="field">
         <label>Position <span class="val" id="pos-val"></span></label>
@@ -134,14 +162,18 @@
       </div>
       <button class="btn ghost sm" id="btn-reset-style">Reset to preset</button>
     </div>
+    </div>
 
     <div class="export">
-      <div class="export-dest"><span class="muted">Exports are made in this tab and saved to your downloads.</span> <span id="ex-res" class="path"></span></div>
+      <div class="export-dest"><span class="muted">Made in this tab, free, nothing uploaded.</span> <span id="ex-res" class="path"></span></div>
       <div class="export-btns">
         <button class="btn primary" id="btn-export">Export MP4</button>
-        <button class="btn ghost" id="btn-srt">SRT</button>
-        <button class="btn ghost" id="btn-vtt" title="WebVTT subtitles">VTT</button>
-        <button class="btn ghost" id="btn-txt" title="Plain-text transcript">TXT</button>
+        <div class="export-sub">
+          <button class="btn ghost" id="btn-srt">SRT</button>
+          <button class="btn ghost" id="btn-vtt" title="WebVTT subtitles">VTT</button>
+          <button class="btn ghost" id="btn-txt" title="Plain-text transcript">TXT</button>
+          <button class="btn ghost" id="btn-copy" title="Copy the spoken text, for your post caption">Copy text</button>
+        </div>
       </div>
       <div class="dl" id="ex" hidden>
         <div class="bar"><i id="ex-bar"></i></div>
@@ -149,7 +181,10 @@
       </div>
       <div class="ex-done" id="ex-done" hidden>
         <span id="ex-done-text">Saved</span>
-        <a class="btn sm" id="ex-again" download>Download again</a>
+        <div class="ex-done-btns">
+          <button class="btn sm primary" id="btn-share" hidden>Save / Share</button>
+          <a class="btn sm" id="ex-again" download>Download again</a>
+        </div>
       </div>
       <div class="upsell" id="upsell-after" hidden></div>
     </div>
