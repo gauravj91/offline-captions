@@ -58,14 +58,21 @@
     var b = document.createElement("div");
     b.setAttribute("role", "dialog");
     b.setAttribute("aria-label", "Analytics choice");
-    b.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483000;max-width:560px;margin:0 auto;" +
-      "background:#15161a;color:#f2f2f2;border:1px solid #2c2e35;border-radius:12px;padding:12px 14px;" +
-      "font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35);" +
-      "display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+    var small = window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
+    // Phones: compact strip at the TOP so it never covers Export / bottom controls.
+    b.style.cssText = (small
+      ? "position:fixed;left:8px;right:8px;top:8px;padding:8px 10px;gap:8px;font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;flex-wrap:nowrap;"
+      : "position:fixed;left:12px;right:12px;bottom:12px;padding:12px 14px;gap:12px;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;flex-wrap:wrap;") +
+      "z-index:2147483000;max-width:560px;margin:0 auto;background:#15161a;color:#f2f2f2;border:1px solid #2c2e35;border-radius:12px;" +
+      "box-shadow:0 8px 30px rgba(0,0,0,.35);display:flex;align-items:center";
     var privacy = (c.SITE_URL || "https://offlinecaptions.com").replace(/\/$/, "") + "/privacy/";
-    b.innerHTML = '<span style="flex:1 1 260px">We use Google Analytics to see which features people use. No ads, and your videos never leave your device. <a href="' + privacy + '" style="color:#9ecbff">Privacy</a></span>' +
-      '<span style="display:flex;gap:8px"><button data-v="denied" style="background:transparent;color:#f2f2f2;border:1px solid #444;border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit">Decline</button>' +
-      '<button data-v="granted" style="background:#f2f2f2;color:#111;border:0;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:600">Accept</button></span>';
+    var txt = small
+      ? 'Analytics cookies? Videos never leave your device. <a href="' + privacy + '" style="color:#9ecbff">Privacy</a>'
+      : 'We use Google Analytics to see which features people use. No ads, and your videos never leave your device. <a href="' + privacy + '" style="color:#9ecbff">Privacy</a>';
+    var bh = 'min-height:44px;min-width:44px;';
+    b.innerHTML = '<span style="flex:1 1 ' + (small ? '0' : '260px') + ';min-width:0">' + txt + '</span>' +
+      '<span style="display:flex;gap:6px;flex:0 0 auto"><button data-v="denied" style="' + bh + 'background:transparent;color:#f2f2f2;border:1px solid #444;border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit">Decline</button>' +
+      '<button data-v="granted" style="' + bh + 'background:#f2f2f2;color:#111;border:0;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:600">Accept</button></span>';
     b.addEventListener("click", function (e) {
       var v = e.target && e.target.getAttribute && e.target.getAttribute("data-v");
       if (!v) return;
