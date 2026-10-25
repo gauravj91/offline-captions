@@ -32,6 +32,8 @@ for (const f of ['ort-wasm-simd-threaded.jsep.mjs', 'ort-wasm-simd-threaded.jsep
 for (const f of ['Anton-Regular.ttf', 'Montserrat-ExtraBold.ttf', 'OFL-Anton.txt', 'OFL-Montserrat.txt']) fs.copyFileSync(path.join(here, '../fonts', f), path.join(out, 'fonts', f));
 fs.copyFileSync(path.join(here, '../landing/site-config.js'), path.join(out, 'site-config.js'));
 fs.copyFileSync(path.join(here, '../landing/analytics.js'), path.join(out, 'analytics.js'));
-for (const f of ['index.html', 'app.css', 'config.js']) fs.copyFileSync(path.join(here, f), path.join(out, f));
+for (const f of ['index.html', 'app.css', 'config.js', 'manifest.webmanifest']) fs.copyFileSync(path.join(here, f), path.join(out, f));
+fs.mkdirSync(path.join(out, 'icons'), { recursive: true });
+for (const f of fs.readdirSync(path.join(here, 'icons'))) fs.copyFileSync(path.join(here, 'icons', f), path.join(out, 'icons', f));
 fs.copyFileSync(path.join(here, 'vercel.json'), path.join(out, 'vercel.json'));
 console.log('built', out);
