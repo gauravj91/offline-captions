@@ -187,8 +187,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .export-dest .path { color: var(--text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); margin: 8px 0 12px; cursor: pointer; }
 .check input { accent-color: var(--accent); }
-.export-btns { display: flex; gap: 8px; }
-.export-btns .btn.primary { flex: 1; }
+.export-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.export-sub { display: grid; grid-template-columns: 1fr 1fr 1fr 1.45fr; gap: 8px; }
+.export-sub .btn { padding-left: 6px; padding-right: 6px; }
 .ex-done { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--ok); }
 .ex-done span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -236,7 +237,7 @@ select { margin-top: 0; width: 100%; max-width: 280px; }
 .preset .sw { height: 74px; }
 .export-dest { justify-content: space-between; }
 .export-dest .path { max-width: none; color: var(--muted); }
-.export-btns .btn.ghost { min-width: 90px; }
+
 .ex-done span { white-space: normal; }
 .upsell { margin-top: 12px; border: 1px solid rgba(255, 214, 10, .35); background: #17160f; border-radius: 12px; padding: 12px 14px; position: relative; }
 .upsell .up-t { font-weight: 800; margin-bottom: 4px; padding-right: 22px; }
@@ -249,16 +250,6 @@ dialog .price b { font-size: 22px; color: var(--accent); margin-right: 4px; }
 .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- narrow screens (phones) ---------- */
-@media (max-width: 900px) {
-  body.in-review { overflow: auto; display: block; height: auto; }
-  body.in-review .top { position: sticky; top: 0; z-index: 5; }
-  .screen.review { display: block; flex: none; min-height: auto; }
-  .stage-col { display: block; }
-  .stage { height: 58vh; min-height: 300px; padding: 8px; }
-  .panel { border-left: 0; border-top: 1px solid var(--line); }
-  .tab { overflow: visible; max-height: none; }
-  .words { padding-bottom: 8px; }
-}
 @media (max-width: 640px) {
   body { overflow: auto; }
   .top { padding: 0 12px; gap: 10px; height: 52px; }
@@ -288,3 +279,73 @@ dialog .price b { font-size: 22px; color: var(--accent); margin-right: 4px; }
   dialog { padding: 20px 18px 16px; }
   .dlg-actions .btn { flex: 1; }
 }
+
+/* ================= phone-first additions (Oct 2026) ================= */
+.dz-phone { display: none; }
+@media (pointer: coarse), (max-width: 640px) { .dz-phone { display: inline; } .dz-desk { display: none; } }
+
+/* bottom sheet: desktop shows the body as the normal side panel */
+.sheet-head { display: none; }
+.sheet-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* platform safe zones (DOM guide over the preview; the export never sees it) */
+.safe { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.sz { position: absolute; background: rgba(255, 64, 96, .2); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45); display: flex; justify-content: center; align-items: flex-start; overflow: hidden; }
+.sz span { font-size: 10px; font-weight: 700; line-height: 1.3; color: #fff; background: rgba(0, 0, 0, .55); padding: 1px 6px; border-radius: 4px; margin: 4px; white-space: nowrap; }
+.sz-top { left: 0; right: 0; top: 0; height: var(--t); align-items: center; }
+.sz-bottom { left: 0; right: 0; bottom: 0; height: var(--b); }
+.sz-right { right: 0; width: var(--r); top: var(--t); bottom: var(--b); align-items: center; }
+.sz-right span { writing-mode: vertical-rl; padding: 6px 1px; }
+.chip { appearance: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 99px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { color: #ffb3c0; border-color: rgba(255, 64, 96, .55); background: rgba(255, 64, 96, .12); }
+.safe-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 20px; background: #1c1b14; border-top: 1px solid rgba(255, 214, 10, .3); color: #fff3b0; font-size: 12.5px; }
+.safe-bar.ok { background: rgba(52, 211, 153, .07); border-top-color: rgba(52, 211, 153, .3); color: var(--ok); }
+.platform .seg { margin-bottom: 10px; }
+.platform > label.toggle { margin: 2px 0 0; display: flex; justify-content: flex-start; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.ex-done-btns { display: flex; gap: 8px; flex: none; }
+
+@media (max-width: 900px) {
+  /* review = one column: big preview on top, controls in a bottom sheet */
+  html, body { overflow-x: hidden; }
+  body.in-review { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+  .screen.review { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .stage-col { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .stage { flex: 1; min-height: 0; padding: 6px; }
+  .safe-bar { padding: 6px 12px; }
+  .panel { flex: none; border-left: 0; border-top: 1px solid var(--line); min-height: 0; max-height: 64vh; max-height: 64dvh; overflow-y: auto; }
+  .stage { min-height: 180px; }
+  .sheet-head { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 16px; background: var(--bg); color: var(--text); border: 0; border-bottom: 1px solid var(--line); font: inherit; font-weight: 750; cursor: pointer; position: relative; }
+  .sheet-head .grab { position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 99px; background: #3a3a45; }
+  .sheet-title { flex: 1; text-align: left; }
+  .sheet-chev { color: var(--muted); transition: transform .15s; }
+  body.sheet-open .sheet-chev { transform: rotate(180deg); }
+  body:not(.sheet-open) .sheet-body { display: none; }
+  body.sheet-open .sheet-body { height: 44vh; height: 44dvh; flex: none; }
+  .sheet-head { position: sticky; top: 0; z-index: 3; }
+  body.sheet-open .export { display: none; }
+  .tab { overflow-y: auto; }
+  .words { padding-bottom: 8px; font-size: 17px; line-height: 2.6; }
+
+  /* tap targets */
+  .btn, .btn.sm, a.btn, .seg button, .chip { min-height: 44px; }
+  .btn.icon { width: 44px; height: 44px; }
+  .tabs button { min-height: 44px; }
+  .toggle { min-height: 44px; }
+  input[type=range] { height: 44px; margin: 0; }
+  .upsell .x { width: 44px; height: 44px; top: 0; right: 0; }
+  .qi .x { width: 44px; height: 44px; font-size: 20px; }
+  select { min-height: 44px; }
+  .seg { display: flex; }
+  .seg button { flex: 1; padding: 7px 8px; }
+}
+@media (max-width: 640px) {
+  .transport #ratio, .transport #time-dur { display: none; }
+  .export-dest { display: none; }
+  .ex-done { flex-direction: column; align-items: stretch; }
+  .ex-done-btns .btn { flex: 1; }
+  .safe-bar { font-size: 12px; }
+  .safe-bar .btn { flex: none; }
+  .dropzone .btn { width: 100%; }
+}
+.ex-done { flex-wrap: wrap; }
+.ex-done > span { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
