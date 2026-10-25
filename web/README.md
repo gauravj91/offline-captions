@@ -28,6 +28,18 @@ Deploy: upload `dist/` as a static Vercel project (no build step). `vercel.json`
 
 Libraries are bundled or vendored (no CDN at runtime): transformers.js + onnxruntime-web (bundled; `vendor/ort/ort-wasm-simd-threaded.jsep.{mjs,wasm}` copied), mp4box.js 0.5.4, mp4-muxer 5.2 (bundled). Fonts: `fonts/` (OFL Anton, Montserrat ExtraBold) via `@font-face`.
 
+## Phone-first (25 Oct 2026)
+
+Made for TikTok / Reels / Shorts creators on a phone. Everything still runs on the device.
+
+- **Layout** (≤900 px wide): one column. The preview fills the screen on top, the transport and a safe-zone bar sit under it, and the editor (Transcript / Style) folds into a bottom sheet ("Edit words & style · N to check"). The export block shows while the sheet is closed. Tap targets are ≥44 px; no horizontal scroll at 360–430 px (checked by `test/shots-electron.cjs`). Desktop keeps the two-column layout.
+- **Platform safe zones**: Style tab → "Posting to" TikTok / Reels / Shorts, plus a "Safe zones" chip in the transport. Approximate zones (fractions of a 9:16 frame) live in `PLATFORMS` in `src/main.js`: TikTok top 10% / right 15% / bottom 25%, Reels 9 / 14 / 22%, Shorts 8 / 15 / 20%. The guide is a DOM layer (`#safe`) over the preview, so it can never be drawn into an export. **Fit to safe zone** raises the caption above the bottom zone and sets `style.insetR` (right margin) so lines wrap clear of the button column; `drawCaption` honours `insetR` in the preview and the export alike (without it, output is unchanged). Platform + overlay choice persist in `localStorage`.
+- **Save / Share**: after an MP4 export, if `navigator.canShare({ files })` is true a "Save / Share" button opens the share sheet (Save Video to the gallery, or post straight to TikTok/Instagram/YouTube). On touch devices that can share, the file is not auto-downloaded; "Download" stays as the fallback, and a failed share falls back to a download. **Copy text** copies the spoken text as one paragraph (fillers dropped when that toggle is on) for the post caption.
+- **Camera roll**: the file input is `accept="video/*"` so phones offer the photo library. If the browser can't open a clip (often iPhone HEVC outside Safari/Chrome), a clear message explains why and Transcribe stays disabled; HEVC-related export failures say SRT/VTT/TXT/Copy text still work.
+- **PWA basics**: `manifest.webmanifest` (name "Offline Captions", standalone, theme `#0b0b0d`), icons in `icons/` (generated with ImageMagick: yellow rounded square with "CC" in Anton). No service worker on purpose (a stale SW caching old builds is worse than none).
+
+Screenshot harness (no model download, real export): `node serve.mjs & electron --no-sandbox --ozone-platform=headless test/shots-electron.cjs` (needs a `words.json` from an earlier `e2e-electron.cjs` run; env `WORDS`, `SHOTS`).
+
 ## Trial limits (`config.js`, a plain script: edit and redeploy, no rebuild)
 
 | Constant | Value (proposal; Gaurav decides) | Effect |
@@ -85,6 +97,7 @@ Test harness: `test/e2e-electron.cjs` (see its header). It uses Electron's Chrom
 - The whole file is read into memory (fine at ≤5 min for typical phone clips; a 4K 5-min clip can be over 1 GB, which may fail on low-memory devices).
 - Edit lists are approximated (the first shown frame becomes t=0). Audio priming offsets of ~20 ms are not compensated.
 - HEVC (iPhone "High Efficiency") MP4s only export where the browser can decode HEVC with WebCodecs. Otherwise the seek fallback needs `<video>` HEVC support.
+- Phone layout, Web Share and the safe-zone guide were verified headless in Electron's Chromium only, not on a real iPhone/Android. Safe-zone sizes are approximations; the apps change their UI.
 - No vocabulary prompt field, no persistent dictionary (by design: desktop), no cancel button for download/transcribe/export.
 - The upsell link is inactive until a real checkout/landing URL is set.
 - Model license credits (Whisper MIT, transformers.js Apache-2.0, ORT MIT, fonts OFL) are not yet on a page.
