@@ -290,7 +290,7 @@ async function exportViaVideoElement({ file, audioBuffer, lines, style, endSec, 
   v.muted = true; v.playsInline = true; v.preload = 'auto';
   const url = URL.createObjectURL(file);
   v.src = url;
-  await new Promise((r, j) => { v.onloadeddata = r; v.onerror = () => j(new Error('This browser cannot decode this video. Try an MP4 (H.264).')); });
+  await new Promise((r, j) => { v.onloadeddata = r; v.onerror = () => j(new Error('This browser cannot decode this video. iPhone "High Efficiency" (HEVC) clips only work where the browser supports HEVC. Try Safari or Chrome, or an MP4 (H.264)')); });
   const { width, height } = outputSize(v.videoWidth, v.videoHeight, maxShort);
   const fps = 30;
   const vcodec = await pickVideoCodec(width, height, fps);
