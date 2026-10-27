@@ -168,7 +168,20 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 .walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
 .walk video{display:block;width:100%;height:auto}
 .walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
-.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}
+
+.dropbox{display:flex;align-items:center;gap:14px;margin:4px 0 18px;padding:16px 18px;border:2px dashed #3a3a44;border-radius:16px;cursor:pointer;max-width:560px;transition:border-color .15s,background .15s}
+.dropbox:hover,.dropbox.over{border-color:var(--accent);background:rgba(255,214,10,.06)}
+.dropbox.busy{border-style:solid;border-color:var(--accent);cursor:progress}
+.dropbox input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dropbox:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.db-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,214,10,.12);color:var(--accent);font-size:1.4rem;font-weight:800}
+.db-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.db-txt strong{font-size:1rem}
+.db-txt small{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-grid>div{min-width:0}
+.dropbox{max-width:min(560px,100%);box-sizing:border-box}
+@media (max-width:520px){.db-txt small{white-space:normal}}</style>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -198,7 +211,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap">
   <a class="brand" href="../"><span class="brand-dot" aria-hidden="true"></span><span data-cfg="APP_NAME">Offline Captions</span></a>
-  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Pre-order</a></nav>
+  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Buy</a></nav>
 </div></header>
 <main id="main">
   <section class="hero" aria-labelledby="h1"><div class="wrap">
@@ -206,14 +219,14 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <span class="eyebrow">Legal</span>
     <h1 id="h1">Privacy Policy</h1>
     <p class="lede">Short version: your videos never leave your computer. <span data-cfg="APP_NAME">Offline Captions</span> transcribes and renders them locally, and we never see them.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
   </div></section>
 <section aria-labelledby="who-h"><div class="wrap"><h2 id="who-h">Who is responsible</h2><p>Gaurav Jindal, sole proprietor trading as Offline Captions, 3816, Sector 32A, Chandigarh Road, Ludhiana, Punjab 141011, India is responsible for this website and the app. Contact: <a href="mailto:hello@offlinecaptions.com">hello@offlinecaptions.com</a>.</p><p class="small muted">Last updated: 22 October 2026.</p></div></section><section aria-labelledby="vid-h"><div class="wrap"><h2 id="vid-h">Your videos and captions</h2><p>The desktop app and the web version process audio and video entirely on your device. We do not upload, store or have access to your videos, transcripts or captions. The app downloads speech packs once from public model hosting (Hugging Face or GitHub); after that, captioning works offline. If you paste a Google Drive, Dropbox or other link, the app downloads that file directly from that service to your computer.</p></div></section><section aria-labelledby="pay-h"><div class="wrap"><h2 id="pay-h">Purchases</h2><p>Payments are handled by Dodo Payments, our Merchant of Record. Dodo Payments collects your name, email, billing address and payment details to process the order, under the <a href="https://dodopayments.com/privacy-policy" rel="noopener">Dodo Payments privacy policy</a>. Dodo Payments shares with us your name, email, country, order details and refund or dispute status. We never see your full card details.</p><p>We store your email with your license so we can email you your license key after purchase and again when you ask on our <a href="/find-my-key/">find my key</a> page. These emails are sent through Resend (Resend, Inc.).</p></div></section><section aria-labelledby="lic-h"><div class="wrap"><h2 id="lic-h">License activation</h2><p>When you activate, validate or deactivate a license, the app sends your license key and a random device identifier to our license server (hosted on Cloudflare). We use this only to enforce the device limit and to revoke refunded licenses.</p></div></section><section aria-labelledby="wait-h"><div class="wrap"><h2 id="wait-h">Waitlists and email</h2><p>If you join a waitlist, we store your email address, the list you joined and the time, to tell you about that launch. We do not sell or share it. Ask us any time to remove it.</p></div></section><section aria-labelledby="site-h"><div class="wrap"><h2 id="site-h">Website</h2><p>This website is hosted on Vercel, which keeps standard server logs (such as IP address and browser) for security and operations. We do not use advertising cookies.</p></div></section><section aria-labelledby="ga-h"><div class="wrap"><h2 id="ga-h">Analytics</h2><p>This website and the web version use Google Analytics 4 (Google Ireland Ltd.) to count visits and which features are used, for example that a video was captioned or exported, its length range and the caption style. We never send your videos, file names, transcripts or email address to Google Analytics. Analytics cookies are set only if you click Accept in the banner; if you decline, Google receives only cookieless, anonymous pings (Consent Mode). Google signals and ad personalisation are turned off and data is kept for 14 months. Your choice is stored in a cookie named oc_consent; to change it, delete that cookie and reload. Legal basis: your consent (Art. 6(1)(a) GDPR, § 25 TDDDG). See <a href="https://policies.google.com/privacy" rel="noopener">Google's privacy policy</a>.</p></div></section><section aria-labelledby="rights-h"><div class="wrap"><h2 id="rights-h">Your rights</h2><p>You can ask us for a copy of your data, or to correct or delete it, by emailing <a href="mailto:hello@offlinecaptions.com">hello@offlinecaptions.com</a>. We keep purchase records as long as tax law requires. Depending on where you live (for example under the GDPR or India's DPDP Act), you may also complain to your data protection authority.</p></div></section>
 
   <section class="final" id="checkout"><div class="wrap">
     <h2>Stop renting your captions.</h2>
-    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> as a founding pre-order.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
+    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> at the founding price.</p>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
   </div></section>
 </main>
 <footer><div class="wrap cols">
