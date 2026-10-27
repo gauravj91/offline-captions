@@ -168,7 +168,20 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 .walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
 .walk video{display:block;width:100%;height:auto}
 .walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
-.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}
+
+.dropbox{display:flex;align-items:center;gap:14px;margin:4px 0 18px;padding:16px 18px;border:2px dashed #3a3a44;border-radius:16px;cursor:pointer;max-width:560px;transition:border-color .15s,background .15s}
+.dropbox:hover,.dropbox.over{border-color:var(--accent);background:rgba(255,214,10,.06)}
+.dropbox.busy{border-style:solid;border-color:var(--accent);cursor:progress}
+.dropbox input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dropbox:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.db-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,214,10,.12);color:var(--accent);font-size:1.4rem;font-weight:800}
+.db-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.db-txt strong{font-size:1rem}
+.db-txt small{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-grid>div{min-width:0}
+.dropbox{max-width:min(560px,100%);box-sizing:border-box}
+@media (max-width:520px){.db-txt small{white-space:normal}}</style>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -198,7 +211,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap">
   <a class="brand" href="../"><span class="brand-dot" aria-hidden="true"></span><span data-cfg="APP_NAME">Offline Captions</span></a>
-  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Pre-order</a></nav>
+  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Buy</a></nav>
 </div></header>
 <main id="main">
   <section class="hero" aria-labelledby="h1"><div class="wrap">
@@ -206,14 +219,14 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <span class="eyebrow">Legal</span>
     <h1 id="h1">Refund Policy</h1>
     <p class="lede">If Offline Captions isn't right for you, get a full refund within 14 days of purchase. No questions asked.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
   </div></section>
 <section aria-labelledby="how-h"><div class="wrap"><h2 id="how-h">How it works</h2><ul><li>Request a refund within 14 days of your purchase date for a full refund of the amount you paid.</li><li>To ask, email us at <a href="mailto:hello@offlinecaptions.com">hello@offlinecaptions.com</a> from your order email, or reply to your Dodo Payments receipt.</li><li>Refunds go back to your original payment method. Dodo Payments usually processes them within a few business days; your bank may take longer to show it.</li><li>When a refund is issued, the license key stops working.</li></ul><p>Our order process is conducted by our online reseller and Merchant of Record, Dodo Payments (dodopayments.com), who also handles order-related inquiries and returns. Their <a href="https://dodopayments.com/buyer-terms" rel="noopener">buyer terms</a> apply to the payment.</p><p class="small muted">Last updated: 22 October 2026.</p></div></section>
 
   <section class="final" id="checkout"><div class="wrap">
     <h2>Stop renting your captions.</h2>
-    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> as a founding pre-order.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
+    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> at the founding price.</p>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
   </div></section>
 </main>
 <footer><div class="wrap cols">
