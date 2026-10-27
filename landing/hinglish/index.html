@@ -170,7 +170,20 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 .walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
 .walk video{display:block;width:100%;height:auto}
 .walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
-.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}
+
+.dropbox{display:flex;align-items:center;gap:14px;margin:4px 0 18px;padding:16px 18px;border:2px dashed #3a3a44;border-radius:16px;cursor:pointer;max-width:560px;transition:border-color .15s,background .15s}
+.dropbox:hover,.dropbox.over{border-color:var(--accent);background:rgba(255,214,10,.06)}
+.dropbox.busy{border-style:solid;border-color:var(--accent);cursor:progress}
+.dropbox input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dropbox:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.db-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,214,10,.12);color:var(--accent);font-size:1.4rem;font-weight:800}
+.db-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.db-txt strong{font-size:1rem}
+.db-txt small{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-grid>div{min-width:0}
+.dropbox{max-width:min(560px,100%);box-sizing:border-box}
+@media (max-width:520px){.db-txt small{white-space:normal}}</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -186,7 +199,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
       "publisher": {"@type": "Organization", "name": "Offline Captions", "url": "https://offlinecaptions.com/"},
       "offers": {
         "@type": "Offer",
-        "name": "Founding pre-order (India)",
+        "name": "Founding price (India)",
         "price": "1499",
         "priceCurrency": "INR",
         "availability": "https://schema.org/PreOrder",
@@ -224,7 +237,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
       <a class="small" href="#compare">Compare</a>
       <a class="small" href="#pricing">Price</a>
       <a class="small" href="#faq">FAQ</a>
-      <a class="btn btn-sm" data-checkout-inr href="#checkout">Pre-order</a>
+      <a class="btn btn-sm" data-checkout-inr href="#checkout">Buy</a>
     </nav>
   </div>
 </header>
@@ -237,10 +250,10 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
         <h1 id="h1">Hinglish captions, <span class="hl">jaise aap type karte ho.</span> Made on your laptop.</h1>
         <p class="lede">Your audience reads Hinglish in Roman letters, so your captions should too. <span data-cfg="APP_NAME">Offline Captions</span> writes Hindi-English speech in Roman script, times every word for the Reels-style highlight, and never uploads your video. No minute caps, no 30-day plans.</p>
         <div class="cta-row">
-          <a class="btn" data-checkout-inr href="#checkout">Pre-order for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a>
+          <a class="btn" data-checkout-inr href="#checkout">Buy for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a>
           <a class="btn btn-ghost" href="#demo">Watch the demo</a>
         </div>
-        <p class="price-note">Founding price, once. <s><span data-cfg="PRICE_INR_FULL">₹1,999</span></s> after launch. <span data-if="INR_TAX_NOTE" data-cfg="INR_TAX_NOTE"></span> <span data-if="PREORDER_REFUND" data-cfg="PREORDER_REFUND"></span></p>
+        <p class="price-note">Founding price, once. <s><span data-cfg="PRICE_INR_FULL">₹1,999</span></s> later. <span data-if="INR_TAX_NOTE" data-cfg="INR_TAX_NOTE"></span> <span data-if="PREORDER_REFUND" data-cfg="PREORDER_REFUND"></span></p>
         <ul class="ticks">
           <li>Roman-script Hinglish</li>
           <li>Word-by-word timing</li>
@@ -330,9 +343,9 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
       <h2 id="price-h">Pay once. Caption every video.</h2>
       <div class="pricing">
         <div class="card price-card">
-          <span class="pill y">Founding pre-order · India</span>
+          <span class="pill y">Founding price · India</span>
           <p class="big"><span data-cfg="PRICE_INR_PREORDER">₹1,499</span> <small>once</small></p>
-          <p class="muted"><s><span data-cfg="PRICE_INR_FULL">₹1,999</span></s> after launch. <span data-if="INR_TAX_NOTE" data-cfg="INR_TAX_NOTE"></span></p>
+          <p class="muted"><s><span data-cfg="PRICE_INR_FULL">₹1,999</span></s> later. <span data-if="INR_TAX_NOTE" data-cfg="INR_TAX_NOTE"></span></p>
           <ul class="checks">
             <li>Hinglish (Roman script) and English</li>
             <li>No minute caps, no credits</li>
@@ -344,7 +357,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
             <li data-if="DEVICE_LIMIT"><span data-cfg="DEVICE_LIMIT"></span></li>
             <li data-if="MONEY_BACK_DAYS"><span data-cfg="MONEY_BACK_DAYS"></span>-day money-back guarantee</li>
           </ul>
-          <a class="btn" style="width:100%" data-checkout-inr href="#checkout">Pre-order for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a>
+          <a class="btn" style="width:100%" data-checkout-inr href="#checkout">Buy for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a>
         </div>
         <div class="card">
           <h3>12 months of captions</h3>
@@ -415,7 +428,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <div class="wrap">
       <h2 id="final-h">Captions jo aapki audience padhti hai.</h2>
       <p class="lede">Lock in <span data-cfg="PRICE_INR_PREORDER">₹1,499</span>, once.</p>
-      <div class="cta-row"><a class="btn" data-checkout-inr href="#checkout">Pre-order for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a></div>
+      <div class="cta-row"><a class="btn" data-checkout-inr href="#checkout">Buy for <span data-cfg="PRICE_INR_PREORDER">₹1,499</span></a></div>
       <p class="muted" style="margin-top:24px">Not ready yet? Get one email at launch.</p>
       <p class="joined" id="joined" role="status">You're on the list. We'll email you once.</p>
       <form class="waitlist" data-waitlist method="POST" action="#waitlist">
@@ -434,8 +447,8 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <div><h4><span data-cfg="APP_NAME">Offline Captions</span></h4><p>© <span id="year">2026</span> <span data-cfg="APP_NAME">Offline Captions</span>. <a href="../">English site</a></p></div>
     <div><h4>Pages</h4><ul><li><a href="../">Home</a></li><li><a href="../vs/capcut/">vs CapCut</a></li><li><a href="../vs/submagic/">vs Submagic</a></li></ul></div>
     <div><h4>Credits</h4><p class="small">Demo footage: "What is a Spoken Tutorial" (Hindi), <a href="https://spoken-tutorial.org/watch/Spoken+Tutorial+Technology/What+is+a+Spoken+Tutorial/Hindi/" rel="noopener">Spoken Tutorial Project, IIT Bombay</a>, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="license noopener">CC BY-SA 4.0</a>. Reframed to 9:16 and captioned by us; our demo clip is shared under the same CC BY-SA 4.0 licence. Teaser: "Houston, We Have a Podcast Live: #BeAnAstronaut" (NASA Johnson Space Center, with Kayla Barron and Anne Roemer), public domain, via <a href="https://commons.wikimedia.org/wiki/File:Houston,_We_Have_a_Podcast_Live;_Hashtag_BeAnAstronaut.webm" rel="noopener">Wikimedia Commons</a>. Cut, cropped and captioned by us. NASA does not endorse this product. Hinglish models: Oriserve Whisper-Hindi2Hinglish (Apache-2.0) and AI4Bharat IndicConformer (MIT).</p></div>
-  <div><h4>Compare</h4><ul><li><a href="../vs/capcut/">vs CapCut</a></li><li><a href="../vs/submagic/">vs Submagic</a></li><li><a href="../vs/opusclip/">vs OpusClip</a></li><li><a href="../vs/descript/">vs Descript</a></li><li><a href="../vs/autosubtitles/">vs AutoSubtitles</a></li><li><a href="../alternatives/capcut/">CapCut alternatives</a></li><li><a href="../hinglish/vs-aivideocaption/">vs AIVideoCaption</a></li></ul></div><div><h4>Use cases</h4><ul><li><a href="../use-cases/coaches/">Coaches & consultants</a></li><li><a href="../use-cases/podcast-clips/">Podcast clips</a></li><li><a href="../use-cases/course-creators/">Course creators</a></li><li><a href="../use-cases/confidential-footage/">Confidential footage</a></li><li><a href="../hinglish/">Hinglish captions</a></li></ul></div><div><h4>Learn</h4><ul><li><a href="../styles/hormozi-style-captions/">Hormozi-style captions</a></li><li><a href="../how-to/add-word-by-word-captions/">Add word-by-word captions</a></li><li><a href="../accuracy/">Accuracy benchmark</a></li><li><a href="../about/">About the maker</a></li></ul></div></div>
-</footer>
+  <div><h4>Compare</h4><ul><li><a href="../vs/capcut/">vs CapCut</a></li><li><a href="../vs/submagic/">vs Submagic</a></li><li><a href="../vs/opusclip/">vs OpusClip</a></li><li><a href="../vs/descript/">vs Descript</a></li><li><a href="../vs/autosubtitles/">vs AutoSubtitles</a></li><li><a href="../alternatives/capcut/">CapCut alternatives</a></li><li><a href="../hinglish/vs-aivideocaption/">vs AIVideoCaption</a></li></ul></div><div><h4>Use cases</h4><ul><li><a href="../use-cases/coaches/">Coaches & consultants</a></li><li><a href="../use-cases/podcast-clips/">Podcast clips</a></li><li><a href="../use-cases/course-creators/">Course creators</a></li><li><a href="../use-cases/confidential-footage/">Confidential footage</a></li><li><a href="../hinglish/">Hinglish captions</a></li></ul></div><div><h4>Offline tools</h4><ul><li><a href="../offline-auto-caption-app/">Offline auto caption app</a></li><li><a href="../offline-subtitle-generator/">Offline subtitle generator</a></li><li><a href="../best-offline-caption-apps/">Best offline caption apps</a></li><li><a href="../how-to/capcut-captions-srt/">Free SRT for CapCut</a></li></ul></div><div><h4>Learn</h4><ul><li><a href="../styles/hormozi-style-captions/">Hormozi-style captions</a></li><li><a href="../how-to/add-word-by-word-captions/">Add word-by-word captions</a></li><li><a href="../accuracy/">Accuracy benchmark</a></li><li><a href="../about/">About the maker</a></li></ul></div></div>
+<p class="small" style="text-align:center"><a href="../terms/">Terms</a> · <a href="../privacy/">Privacy</a> · <a href="../refunds/">Refunds</a></p></footer>
 <script>(function () {
   var c = window.SITE_CONFIG || {};
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
