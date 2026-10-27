@@ -168,7 +168,20 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 .walk{position:relative;max-width:960px;margin:24px auto 0;border-radius:14px;overflow:hidden;border:1px solid #2c2c33;box-shadow:0 30px 60px rgba(0,0,0,.5);background:#000}
 .walk video{display:block;width:100%;height:auto}
 .walk .snd{position:absolute;bottom:14px;right:12px;font:600 12px/1 inherit;font-family:inherit;color:#fff;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.25);padding:8px 11px;border-radius:999px;cursor:pointer;z-index:2}
-.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}</style>
+.walk .snd[aria-pressed="true"]{background:#ffd60a;color:#111;border-color:#ffd60a}
+
+.dropbox{display:flex;align-items:center;gap:14px;margin:4px 0 18px;padding:16px 18px;border:2px dashed #3a3a44;border-radius:16px;cursor:pointer;max-width:560px;transition:border-color .15s,background .15s}
+.dropbox:hover,.dropbox.over{border-color:var(--accent);background:rgba(255,214,10,.06)}
+.dropbox.busy{border-style:solid;border-color:var(--accent);cursor:progress}
+.dropbox input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.dropbox:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.db-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,214,10,.12);color:var(--accent);font-size:1.4rem;font-weight:800}
+.db-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.db-txt strong{font-size:1rem}
+.db-txt small{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hero-grid>div{min-width:0}
+.dropbox{max-width:min(560px,100%);box-sizing:border-box}
+@media (max-width:520px){.db-txt small{white-space:normal}}</style>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -198,7 +211,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap">
   <a class="brand" href="../"><span class="brand-dot" aria-hidden="true"></span><span data-cfg="APP_NAME">Offline Captions</span></a>
-  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Pre-order</a></nav>
+  <nav class="links" aria-label="Site"><a class="small" href="../#demo">Demo</a><a class="small" href="../vs/capcut/">vs CapCut</a><a class="small" href="../#pricing">Pricing</a><a class="btn btn-sm" data-checkout href="../#checkout">Buy</a></nav>
 </div></header>
 <main id="main">
   <section class="hero" aria-labelledby="h1"><div class="wrap">
@@ -206,14 +219,14 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <span class="eyebrow">Legal</span>
     <h1 id="h1">Terms of Service</h1>
     <p class="lede">These terms cover the <span data-cfg="APP_NAME">Offline Captions</span> desktop app, the free web version and this website. By buying or using them you agree to these terms.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="https://app.offlinecaptions.com">Try it free in your browser</a></div>
   </div></section>
 <section aria-labelledby="who-h"><div class="wrap"><h2 id="who-h">Who we are</h2><p><span data-cfg="APP_NAME">Offline Captions</span> is made and sold by Gaurav Jindal, sole proprietor trading as Offline Captions, 3816, Sector 32A, Chandigarh Road, Ludhiana, Punjab 141011, India. Contact: <a href="mailto:hello@offlinecaptions.com">hello@offlinecaptions.com</a>.</p><p class="small muted">Last updated: 22 October 2026.</p></div></section><section aria-labelledby="buy-h"><div class="wrap"><h2 id="buy-h">Buying a license</h2><p>Our order process is conducted by our online reseller and Merchant of Record, Dodo Payments (dodopayments.com), who also handles order-related inquiries and returns. Their <a href="https://dodopayments.com/buyer-terms" rel="noopener">buyer terms</a> apply to the payment.</p><p>Prices are shown on our <a href="/#pricing">pricing section</a> and at checkout, including any sales tax or VAT Dodo Payments collects. A purchase is a one-time payment for a perpetual license; there is no subscription and nothing renews.</p></div></section><section aria-labelledby="lic-h"><div class="wrap"><h2 id="lic-h">What your license allows</h2><ul><li>You may install and use the app on up to 2 of your own computers at a time. You can move a license by deactivating it on one computer and activating it on another.</li><li>You may use it for personal and commercial work, including videos you publish or make for clients. You own the captions and videos you create.</li><li>You may not resell, share or publish your license key, or try to bypass the license check.</li><li>Updates released for the version you bought are included. If we ever release a new major version as a paid upgrade, the version you bought keeps working.</li></ul></div></section><section aria-labelledby="web-h"><div class="wrap"><h2 id="web-h">The free web version</h2><p>The web version is free, runs in your browser, and has the limits shown on its page. We may change those limits or the web version at any time.</p></div></section><section aria-labelledby="content-h"><div class="wrap"><h2 id="content-h">Your content</h2><p>Your videos are processed on your own device. You are responsible for having the rights to the videos you caption and to any links you paste into the app. The app does not download from YouTube or social media sites.</p></div></section><section aria-labelledby="ref-h"><div class="wrap"><h2 id="ref-h">Refunds</h2><p>You can get a full refund within 14 days of purchase. See our <a href="/refunds/">refund policy</a>.</p></div></section><section aria-labelledby="liab-h"><div class="wrap"><h2 id="liab-h">Warranty and liability</h2><p>We work hard to make the app accurate and reliable, but speech recognition makes mistakes, so review your captions before you publish. The software is provided "as is" to the extent the law allows. Our total liability to you for any claim is limited to the amount you paid for your license. Nothing in these terms limits rights you have under consumer protection laws that cannot be excluded.</p></div></section><section aria-labelledby="oss-h"><div class="wrap"><h2 id="oss-h">Third-party components</h2><p>The app includes open-source software and speech models, used under their own licenses, which are listed in the app's About screen.</p></div></section><section aria-labelledby="law-h"><div class="wrap"><h2 id="law-h">Changes and law</h2><p>We may update these terms; the date above shows the latest version, and changes do not reduce rights for purchases already made. These terms are governed by the laws of India, without affecting mandatory consumer protections in your country.</p></div></section>
 
   <section class="final" id="checkout"><div class="wrap">
     <h2>Stop renting your captions.</h2>
-    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> as a founding pre-order.</p>
-    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Pre-order for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
+    <p class="lede">Unlimited videos, offline, no watermark. <span data-cfg="PRICE_FULL">$39</span> once, or <span data-cfg="PRICE_PREORDER">$29</span> at the founding price.</p>
+    <div class="cta-row"><a class="btn" data-checkout href="../#checkout">Buy for <span data-cfg="PRICE_PREORDER">$29</span></a><a class="btn btn-ghost" href="../">See the demo</a></div>
   </div></section>
 </main>
 <footer><div class="wrap cols">
