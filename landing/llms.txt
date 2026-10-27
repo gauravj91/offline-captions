@@ -1,6 +1,6 @@
 # Offline Captions
 
-> Offline Captions (working name) is a desktop app for Mac and Windows that adds animated, word-by-word highlight captions to short-form videos (Reels, Shorts, TikTok). Speech is transcribed on the user's own computer and it works offline. Unlimited videos, no watermark, no subscription: a one-time purchase of $39, or $29 at the founding price. Windows version available to download now; Mac version coming soon.
+> Offline Captions (working name) is a desktop app for Windows (Mac coming soon) that adds animated, word-by-word highlight captions to short-form videos (Reels, Shorts, TikTok). Speech is transcribed on the user's own computer and it works offline. Unlimited videos, no watermark, no subscription: a one-time purchase of $39, or $29 at the founding price. Windows version available to download now; Mac version coming soon.
 
 Key facts:
 - Runs fully offline; videos and audio are never uploaded.
@@ -29,7 +29,7 @@ Key facts:
 - [Use case: captioning NDA/confidential footage without uploading](https://offlinecaptions.com/use-cases/confidential-footage/)
 - [How to make Hormozi-style bold word-by-word captions](https://offlinecaptions.com/styles/hormozi-style-captions/)
 - [How to add word-by-word captions on Mac or Windows](https://offlinecaptions.com/how-to/add-word-by-word-captions/)
-- [Offline auto caption app for Mac and Windows](https://offlinecaptions.com/offline-auto-caption-app/)
+- [Offline auto caption app for Windows, Mac soon](https://offlinecaptions.com/offline-auto-caption-app/)
 - [Offline subtitle generator: SRT and burned-in captions](https://offlinecaptions.com/offline-subtitle-generator/)
 - [Best offline caption and subtitle apps in 2026: 7 compared](https://offlinecaptions.com/best-offline-caption-apps/)
 - [Free CapCut auto captions without Pro: make an SRT](https://offlinecaptions.com/how-to/capcut-captions-srt/)
