@@ -170,6 +170,27 @@ async function setFile(file) {
   if (long || big) track('limit_hit', { reason: long && big ? 'length_and_4k' : long ? 'length' : '4k' });
   updateStart();
 }
+// A video dropped on the landing page (offlinecaptions.com) waits in IndexedDB; see handoff.html.
+function takeHandoff() {
+  history.replaceState(null, '', location.pathname);
+  const r = indexedDB.open('oc-handoff', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('f');
+  r.onsuccess = () => {
+    try {
+      const st = r.result.transaction('f', 'readwrite').objectStore('f');
+      const g = st.get('pending');
+      g.onsuccess = () => {
+        const v = g.result;
+        st.delete('pending');
+        if (v && v.file && Date.now() - v.t < 10 * 60 * 1000) {
+          const f = v.file instanceof File ? v.file : new File([v.file], v.name || 'video.mp4', { type: v.file.type });
+          track('handoff_used', {});
+          setFile(f);
+        } else track('handoff_missing', {});
+      };
+    } catch { track('handoff_missing', {}); }
+  };
+}
 function clearFile() {
   if (state.busy) return;
   state.file = null; state.meta = null; state.project = null;
@@ -731,6 +752,7 @@ function showAfterUpsell() {
   syncStyle();
   renderSafe();
   await refreshModel();
+  if (new URLSearchParams(location.search).has('handoff')) takeHandoff();
   window.__ui = {
     state, setFile, start, exportVideo, editWord, commitEdit, nextFlag, seek, showScreen, video, srt: () => buildSrt(state.lines),
     fitToSafe, setSafe, spokenText,
