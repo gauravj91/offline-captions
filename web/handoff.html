@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>handoff</title>
+<script>
+// Receives a video dropped on offlinecaptions.com (this page sits in a hidden iframe there),
+// keeps it in this origin's IndexedDB, then the landing page sends the tab to /?handoff=1.
+// The file never leaves the user's browser.
+(function () {
+  var OK = /^https:\/\/(www\.)?offlinecaptions\.com$/;
+  function put(file, cb) {
+    var r = indexedDB.open('oc-handoff', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('f'); };
+    r.onerror = function () { cb(false); };
+    r.onsuccess = function () {
+      try {
+        var tx = r.result.transaction('f', 'readwrite');
+        tx.objectStore('f').put({ file: file, t: Date.now() }, 'pending');
+        tx.oncomplete = function () { cb(true); };
+        tx.onerror = tx.onabort = function () { cb(false); };
+      } catch (e) { cb(false); }
+    };
+  }
+  addEventListener('message', function (e) {
+    if (!OK.test(e.origin) || !e.data || e.data.type !== 'oc-file' || !(e.data.file instanceof Blob)) return;
+    put(e.data.file, function (ok) { e.source.postMessage({ type: 'oc-stored', ok: ok }, e.origin); });
+  });
+  if (parent !== window) parent.postMessage({ type: 'oc-ready' }, '*');
+})();
+</script>
