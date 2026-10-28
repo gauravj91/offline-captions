@@ -280,16 +280,21 @@ async function start() {
       }
     };
     $('#dl-text').textContent = state.cached[state.model] ? 'Loading the model from this browser\'s cache…' : 'Connecting to the model download…';
-    let ready;
-    try {
-      ready = await call({ type: 'load', model: m.id, device: state.device }, onDl);
-    } catch (e) {
-      if (state.device !== 'webgpu') throw e;
-      // WebGPU failed on this GPU/driver: fall back to WASM, no user action needed.
-      console.warn('WebGPU failed, using WASM', e);
-      worker.terminate(); worker = null; state.device = 'wasm';
-      ready = await call({ type: 'load', model: m.id, device: 'wasm' }, onDl);
-    }
+    // Any failure (WebGPU session/device lost, an aborted/flaky model download) gets one
+    // automatic retry: WebGPU -> WASM, or the same device again with a fresh worker.
+    const loadModel = async () => {
+      try {
+        return await call({ type: 'load', model: m.id, device: state.device }, onDl);
+      } catch (e) {
+        console.warn('Model load failed, retrying', state.device, e);
+        track('load_retry', { device: state.device, message: String(e.message || e).slice(0, 90) });
+        if (worker) { worker.terminate(); worker = null; }
+        if (state.device === 'webgpu') state.device = 'wasm';
+        $('#dl-text').textContent = 'Retrying the model download…';
+        return await call({ type: 'load', model: m.id, device: state.device }, onDl);
+      }
+    };
+    let ready = await loadModel();
     T.modelLoadMs = Math.round(performance.now() - t1);
     T.device = ready.device; T.threads = ready.threads; T.model = m.id;
     T.modelFromCache = !!state.cached[state.model];
@@ -300,9 +305,21 @@ async function start() {
     openReview();
     setBusy('Transcribing on this device… 0%', 0);
     const t2 = performance.now();
-    const res = await call({ type: 'transcribe', audio, language: state.lang }, (p) => {
-      if (p.stage === 'transcribe') setBusy(`Transcribing on this device… ${Math.round(p.fraction * 100)}%`, p.fraction);
-    });
+    const onTx = (p) => { if (p.stage === 'transcribe') setBusy(`Transcribing on this device… ${Math.round(p.fraction * 100)}%`, p.fraction); };
+    let res;
+    try {
+      res = await call({ type: 'transcribe', audio: audio.slice(), language: state.lang }, onTx);
+    } catch (e) {
+      // GPU device lost / aborted mid-run (common on some laptops and Firefox): redo on WASM.
+      console.warn('Transcription failed, retrying on WASM', state.device, e);
+      track('transcribe_retry', { device: state.device, message: String(e.message || e).slice(0, 90) });
+      if (worker) { worker.terminate(); worker = null; }
+      state.device = 'wasm';
+      setBusy('Switching to a safer mode and trying again…', null);
+      ready = await call({ type: 'load', model: m.id, device: 'wasm' }, onDl);
+      T.device = ready.device;
+      res = await call({ type: 'transcribe', audio: audio.slice(), language: state.lang }, onTx);
+    }
     T.transcribeMs = Math.round(performance.now() - t2);
     T.realtimeFactor = +(T.clipSeconds / (T.transcribeMs / 1000)).toFixed(2);
     const words = flagForReview(res.words.filter((w) => w.start < endSec() + 0.5), CFG.REVIEW_THRESHOLD);
@@ -315,7 +332,10 @@ async function start() {
     console.error(e);
     track('transcribe_error', { model: state.model, device: state.device, message: String(e.message || e).slice(0, 90) });
     showScreen('import');
-    showErr(String(e.message || e));
+    const msg = String(e.message || e);
+    showErr(/abort/i.test(msg) || e?.name === 'AbortError'
+      ? 'The transcription was interrupted (the model download or your graphics card stopped). Please press Transcribe again; if it keeps happening, try Chrome or Edge, and tell us at hello@offlinecaptions.com.'
+      : msg);
     $('#dl').hidden = true;
   } finally {
     state.busy = false; updateStart();
