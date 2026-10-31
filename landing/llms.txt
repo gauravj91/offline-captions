@@ -36,6 +36,14 @@ Key facts:
 - [Accuracy benchmark: method, results and limits](https://offlinecaptions.com/accuracy/)
 - [About the maker and how comparisons are kept honest](https://offlinecaptions.com/about/)
 
+## Free subtitle tools (run in the browser, nothing uploaded)
+- [All free subtitle tools](https://offlinecaptions.com/tools/)
+- [SRT to VTT converter](https://offlinecaptions.com/tools/srt-to-vtt/)
+- [VTT to SRT converter](https://offlinecaptions.com/tools/vtt-to-srt/)
+- [SRT to text (transcript)](https://offlinecaptions.com/tools/srt-to-text/)
+- [Subtitle shifter: fix out-of-sync subtitles](https://offlinecaptions.com/tools/subtitle-shifter/)
+- [SRT fixer: numbering, overlaps, broken timings](https://offlinecaptions.com/tools/srt-fixer/)
+
 ## Hubs
 - [All comparisons](https://offlinecaptions.com/vs/)
 - [Use cases](https://offlinecaptions.com/use-cases/)
