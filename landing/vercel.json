@@ -26,5 +26,6 @@
       "destination": "/#pricing",
       "permanent": false
     }
-  ]
+  ],
+  "trailingSlash": true
 }
