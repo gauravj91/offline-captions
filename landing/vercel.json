@@ -22,7 +22,17 @@
       "permanent": false
     },
     {
+      "source": "/download/windows/",
+      "destination": "https://huggingface.co/gaurav-jindal/offline-captions-downloads/resolve/main/OfflineCaptions-Setup-1.0.0.exe?download=true",
+      "permanent": false
+    },
+    {
       "source": "/download",
+      "destination": "/#pricing",
+      "permanent": false
+    },
+    {
+      "source": "/download/",
       "destination": "/#pricing",
       "permanent": false
     }
