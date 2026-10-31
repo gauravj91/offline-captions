@@ -497,7 +497,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
             </tr>
           </thead>
           <tbody>
-            <tr><th scope="row">Price</th><td class="col-us"><strong><span data-cfg="PRICE_FULL">$39</span> once</strong><br><span data-cfg="PRICE_PREORDER">$29</span> founding price</td><td>$19.99/mo or $179.99/yr</td><td>$12–$41/mo billed yearly, $19–$69 monthly</td><td>Free with watermark; Pro $9/mo</td><td>$16/mo billed yearly, $24 monthly</td></tr>
+            <tr><th scope="row">Price</th><td class="col-us"><strong>$39 once</strong><br>$29 founding price</td><td>$19.99/mo or $179.99/yr</td><td>$12–$41/mo billed yearly, $19–$69 monthly</td><td>Free with watermark; Pro $9/mo</td><td>$16/mo billed yearly, $24 monthly</td></tr>
             <tr><th scope="row">How you pay</th><td class="col-us">One-time purchase</td><td>Subscription</td><td>Subscription + credits</td><td>Subscription</td><td>Subscription</td></tr>
             <tr><th scope="row">Auto captions</th><td class="col-us">Included</td><td>Pro only (not in free)</td><td>All plans</td><td>All plans</td><td>All plans ("dynamic captions")</td></tr>
             <tr><th scope="row">How many videos</th><td class="col-us">Unlimited</td><td>No cap listed; AI features use 1,200 AI points/month</td><td>15, 40 or 100 videos/month by plan</td><td>Not listed</td><td>10 media hours/month</td></tr>
@@ -520,17 +520,17 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     <div class="wrap">
       <span class="eyebrow">What you save</span>
       <h2 id="sav-h">Pays for itself in under two months</h2>
-      <p class="lede">CapCut Pro costs $19.99 a month just to keep auto-captions. Move the sliders to see your own numbers.</p>
+      <p class="lede">CapCut Pro costs $179.99 a year (or $19.99 a month) just to keep auto-captions. Move the sliders to see your own numbers.</p>
       <div class="card sav-card">
         <label class="sav-row"><span>Videos you post a month: <strong id="sav-v-out">10</strong></span>
           <input type="range" id="sav-v" min="1" max="60" value="10" aria-describedby="sav-note"></label>
         <label class="sav-row"><span>Minutes you spend captioning one video by hand: <strong id="sav-m-out">20</strong></span>
           <input type="range" id="sav-m" min="5" max="90" step="5" value="20" aria-describedby="sav-note"></label>
         <div class="sav-out">
-          <div><span class="sav-big hl" id="sav-money">$211</span><span class="muted small">kept in your first year vs CapCut Pro</span></div>
+          <div><span class="sav-big hl" id="sav-money">$151</span><span class="muted small">kept in your first year vs CapCut Pro</span></div>
           <div><span class="sav-big hl" id="sav-hours">34 h</span><span class="muted small">back each year</span></div>
         </div>
-        <p class="small muted" id="sav-note">Money: CapCut Pro at $19.99/month (list price, checked October 2026) for 12 months, minus our <span data-cfg="PRICE_PREORDER">$29</span> founding price. Time: your minutes by hand, minus about 3 minutes per video to check and fix the app's captions. Your own numbers will differ.</p>
+        <p class="small muted" id="sav-note">Money: CapCut Pro's yearly plan at $179.99 (US list price, checked October 2026; paying monthly costs $239.88), minus our $29 founding price. Time: your minutes by hand, minus about 3 minutes per video to check and fix the app's captions. Your own numbers will differ.</p>
       </div>
     </div>
   </section>
@@ -549,7 +549,7 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
     if(!v||!m)return;
     function price(){var p=((window.SITE_CONFIG||{}).PRICE_PREORDER||'$29').replace(/[^0-9.]/g,'');return parseFloat(p)||29;}
     function upd(){
-      var vid=+v.value,min=+m.value,saved=Math.round(19.99*12-price());
+      var vid=+v.value,min=+m.value,saved=Math.round(179.99-29);
       var hrs=Math.max(0,Math.round(vid*Math.max(0,min-3)*12/60));
       document.getElementById('sav-v-out').textContent=vid;
       document.getElementById('sav-m-out').textContent=min;
@@ -588,13 +588,13 @@ fieldset.intent input{accent-color:var(--accent);width:18px;height:18px}
           <h3>What captions cost over 12 months</h3>
           <p class="small muted">Cheapest way to pay for a year on each plan that includes auto captions.</p>
           <div class="bars" role="list">
-            <div class="bar us" role="listitem"><span><strong data-cfg="APP_NAME">Offline Captions</strong></span><div class="track"><div class="fill" style="width:15.1%"><span data-cfg="PRICE_PREORDER">$29</span>&nbsp;once</div></div></div>
+            <div class="bar us" role="listitem"><span><strong data-cfg="APP_NAME">Offline Captions</strong></span><div class="track"><div class="fill" style="width:15.1%">$29&nbsp;once</div></div></div>
             <div class="bar" role="listitem"><span>AutoSubtitles Pro<br><span class="small muted">$9 × 12</span></span><div class="track"><div class="fill" style="width:56.3%">$108</div></div></div>
             <div class="bar" role="listitem"><span>Submagic Starter<br><span class="small muted">$12 × 12, yearly</span></span><div class="track"><div class="fill" style="width:75%">$144</div></div></div>
             <div class="bar" role="listitem"><span>CapCut Pro<br><span class="small muted">yearly plan</span></span><div class="track"><div class="fill" style="width:93.7%">$179.99</div></div></div>
             <div class="bar" role="listitem"><span>Descript Hobbyist<br><span class="small muted">$16 × 12, yearly</span></span><div class="track"><div class="fill" style="width:100%">$192</div></div></div>
           </div>
-          <p class="foot">Year two costs the same again on every subscription. Submagic Starter also caps you at 15 videos a month and 2 minutes each; Submagic Pro is $276 a year. List prices checked October 2026, sources in the table above. At the $39 regular price the first bar would read $39.</p>
+          <p class="foot">Year two costs the same again on every subscription. Submagic Starter also caps you at 15 videos a month and 2 minutes each; Submagic Pro is $276 a year. US list prices in USD, checked October 2026, sources in the table above. At the $39 regular price the first bar would read $39.</p>
         </div>
             <div class="card next-card" id="shorts-studio">
         <span class="pill">Coming next · planned, not for sale yet</span>
