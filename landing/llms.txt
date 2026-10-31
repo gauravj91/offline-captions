@@ -35,3 +35,9 @@ Key facts:
 - [Free CapCut auto captions without Pro: make an SRT](https://offlinecaptions.com/how-to/capcut-captions-srt/)
 - [Accuracy benchmark: method, results and limits](https://offlinecaptions.com/accuracy/)
 - [About the maker and how comparisons are kept honest](https://offlinecaptions.com/about/)
+
+## Hubs
+- [All comparisons](https://offlinecaptions.com/vs/)
+- [Use cases](https://offlinecaptions.com/use-cases/)
+- [Guides](https://offlinecaptions.com/guides/)
+- [HTML sitemap](https://offlinecaptions.com/sitemap/)
