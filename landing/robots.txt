@@ -20,6 +20,7 @@ User-agent: YouBot
 User-agent: ExaSearchBot
 User-agent: LinkupBot
 User-agent: ShapBot
+User-agent: CCBot
 Allow: /
 
 # Pure training scrapers and SEO/backlink crawlers that send no visitors back.
@@ -30,7 +31,6 @@ User-agent: ElevenlabsCrawler
 User-agent: AionBot
 User-agent: TokenFoundryBot
 User-agent: Bytespider
-User-agent: CCBot
 User-agent: AwarioBot
 User-agent: QlyzeBot
 User-agent: Barkrowler
