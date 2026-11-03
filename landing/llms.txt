@@ -28,6 +28,7 @@ Key facts:
 - [Use case: captioning podcast clips in one batch](https://offlinecaptions.com/use-cases/podcast-clips/)
 - [Use case: course creators (burned-in promos + SRT for lessons)](https://offlinecaptions.com/use-cases/course-creators/)
 - [Use case: captioning NDA/confidential footage without uploading](https://offlinecaptions.com/use-cases/confidential-footage/)
+- [Captions for YouTube Shorts and Instagram Reels (burned-in, word-by-word, offline)](https://offlinecaptions.com/use-cases/shorts-and-reels/)
 - [How to make Hormozi-style bold word-by-word captions](https://offlinecaptions.com/styles/hormozi-style-captions/)
 - [How to add word-by-word captions on Mac or Windows](https://offlinecaptions.com/how-to/add-word-by-word-captions/)
 - [Offline auto caption app for Windows, Mac soon](https://offlinecaptions.com/offline-auto-caption-app/)
