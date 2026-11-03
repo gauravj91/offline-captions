@@ -1,6 +1,18 @@
 // Groups words into short caption lines that read well on vertical video.
 const FILLERS = new Set(['um', 'uh', 'erm', 'uhm', 'hmm', 'mm', 'ah']);
 
+// Whisper sometimes emits speaker-change marks (">>", "-") as words or glued to a word.
+// Strip them, and drop tokens left with no letters or digits, so they never reach captions.
+export function cleanMarks(words) {
+  const out = [];
+  for (const w of words) {
+    const text = String(w.text).replace(/^\s*(?:>{2,}|&gt;&gt;)\s*/, '').replace(/\s*(?:>{2,}|&gt;&gt;)\s*$/, '').trim();
+    if (!/[\p{L}\p{N}]/u.test(text)) continue;
+    out.push(text === w.text ? w : { ...w, text });
+  }
+  return out;
+}
+
 export function removeFillers(words) {
   return words.filter((w) => !FILLERS.has(w.text.toLowerCase().replace(/[^a-z]/g, '')));
 }
@@ -11,6 +23,7 @@ export function removeFillers(words) {
  * @returns [{start,end,words:[...]}]
  */
 export function segment(words, { maxWords = 4, maxChars = 22, maxDur = 2.5, gap = 0.6 } = {}) {
+  words = cleanMarks(words);
   const lines = [];
   let cur = [];
   const flush = () => {
