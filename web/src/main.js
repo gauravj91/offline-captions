@@ -3,7 +3,7 @@
 // transcribed in a Web Worker, captions are drawn on a canvas and the MP4 is
 // encoded with WebCodecs. Nothing is uploaded.
 import { PRESETS, resolveStyle } from '../../src/styles.mjs';
-import { segment, removeFillers } from '../../src/segment.mjs';
+import { segment, removeFillers, cleanMarks } from '../../src/segment.mjs';
 import { flagForReview } from '../../src/review.mjs';
 import { buildSrt, buildVtt, buildTxt } from '../../src/srt.mjs';
 import { drawCaption, drawSample } from './draw.js';
@@ -322,7 +322,7 @@ async function start() {
     }
     T.transcribeMs = Math.round(performance.now() - t2);
     T.realtimeFactor = +(T.clipSeconds / (T.transcribeMs / 1000)).toFixed(2);
-    const words = flagForReview(res.words.filter((w) => w.start < endSec() + 0.5), CFG.REVIEW_THRESHOLD);
+    const words = flagForReview(cleanMarks(res.words).filter((w) => w.start < endSec() + 0.5), CFG.REVIEW_THRESHOLD);
     state.project = { words, duration: endSec(), width: state.meta.width, height: state.meta.height, engine: `whisper-${state.model}` };
     $('#frame-busy').hidden = true;
     $('#dl').hidden = true;
