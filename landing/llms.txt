@@ -19,6 +19,7 @@ Key facts:
 - [Offline Captions vs CapCut](https://offlinecaptions.com/vs/capcut/): sourced comparison with CapCut Pro
 - [Offline Captions vs Submagic](https://offlinecaptions.com/vs/submagic/): sourced comparison with Submagic
 - [Offline Captions vs OpusClip: captions vs AI clipping on credits](https://offlinecaptions.com/vs/opusclip/)
+- [Offline Captions vs the Captions app (captions.ai): offline desktop captions, pay once](https://offlinecaptions.com/vs/captions-ai/)
 - [Offline Captions vs Descript: caption-only app vs full text-based editor](https://offlinecaptions.com/vs/descript/)
 - [Offline Captions vs AutoSubtitles: fully offline vs audio sent to the cloud](https://offlinecaptions.com/vs/autosubtitles/)
 - [Hinglish captions: Offline Captions vs AIVideoCaption (India)](https://offlinecaptions.com/hinglish/vs-aivideocaption/)
