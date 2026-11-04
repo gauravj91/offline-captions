@@ -7,6 +7,13 @@
    - window.ocTrack(name, params) sends a product event (a no-op when GA is off).
    Never send file names, transcripts or emails to GA: only counts, buckets and settings. */
 (function () {
+  /* Vercel Web Analytics: cookieless page views (no consent needed, no personal data), so we
+     also count visitors who decline GA. Loads only on our own hosts. */
+  if (!window.__ocVercel && /(^|\.)offlinecaptions\.com$|\.vercel\.app$/.test(location.hostname)) {
+    window.__ocVercel = true;
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    var vs = document.createElement("script"); vs.src = "/_vercel/insights/script.js"; vs.defer = true; document.head.appendChild(vs);
+  }
   var c = window.SITE_CONFIG || {};
   window.ocTrack = function () {};
   if (!c.GA_ID || window.__ocAnalytics) return;
