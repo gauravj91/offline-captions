@@ -35,6 +35,26 @@
       "source": "/download/",
       "destination": "/#pricing",
       "permanent": false
+    },
+    {
+      "source": "/contact",
+      "destination": "/about/#contact-h",
+      "permanent": true
+    },
+    {
+      "source": "/contact/",
+      "destination": "/about/#contact-h",
+      "permanent": true
+    },
+    {
+      "source": "/contact-us",
+      "destination": "/about/#contact-h",
+      "permanent": true
+    },
+    {
+      "source": "/contact-us/",
+      "destination": "/about/#contact-h",
+      "permanent": true
     }
   ],
   "trailingSlash": true
