@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://offlinecaptions.com/sitemap.xml
