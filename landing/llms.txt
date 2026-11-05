@@ -39,6 +39,7 @@ Key facts:
 - [Best auto caption apps for Reels, TikTok and Shorts (2026): 8 compared, prices checked 2 Nov 2026](https://offlinecaptions.com/best/auto-caption-apps/)
 - [Caption software with a one-time price (no subscription), 2026: Caption Plug, CapiCap, AI Subtitle Studio, WithSubtitles, Subtitle Studio, Offline Captions](https://offlinecaptions.com/best/one-time-caption-software/)
 - [Free CapCut auto captions without Pro: make an SRT](https://offlinecaptions.com/how-to/capcut-captions-srt/)
+- [DaVinci Resolve auto captions: Studio-only Create Subtitles from Audio, and a free SRT workaround](https://offlinecaptions.com/how-to/davinci-resolve-auto-captions/)
 - [Accuracy benchmark: method, results and limits](https://offlinecaptions.com/accuracy/)
 - [About the maker and how comparisons are kept honest](https://offlinecaptions.com/about/)
 
